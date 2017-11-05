@@ -1,0 +1,46 @@
+[package]
+authors = ["prokosna <prokosna@gmail.com>"]
+name = "jongleur_back"
+version = "0.1.0"
+
+[dependencies]
+base64 = "0.7.0"
+blake2 = "0.6.1"
+bson = "0.9.0"
+config = "0.7.0"
+env_logger = "0.4.3"
+error-chain = "0.11.0"
+jsonwebtoken = "2.0.3"
+lazy_static = "0.2.8"
+log = "0.3.8"
+mongo_driver = "0.9.0"
+mongodb = "0.3.3"
+r2d2 = "0.7.3"
+r2d2_redis = "0.6.0"
+rand = "0.3.16"
+redis = "0.8.0"
+regex = "0.2.2"
+rocket = "0.3.3"
+rocket_codegen = "0.3.3"
+rocket_contrib = "0.3.3"
+rocket_cors = "0.2.0"
+serde = "1.0.11"
+serde_derive = "1.0.11"
+serde_json = "1.0.3"
+serde_urlencoded = "0.5.1"
+time = "0.1.38"
+url = "1.5.1"
+
+[dependencies.chrono]
+features = [
+    "serde",
+    "rustc-serialize",
+]
+version = "0.4.0"
+
+[dependencies.uuid]
+features = [
+    "serde",
+    "v4",
+]
+version = "0.5.1"

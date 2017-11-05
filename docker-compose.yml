@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  redis:
+    image: redis:3.2.10-alpine
+    ports:
+      - 6379:6379
+
+  mongo:
+    image: mongo:3.4.8
+    ports:
+      - 27017:27017
+
+  mongo_init:
+    image: mongo:3.4.8
+    depends_on:
+      - mongo
+    command: mongo --host mongo --eval "db.getSiblingDB('jongleur').createUser({user:'jongleur',pwd:'password',roles:[{role:'readWrite',db:'jongleur'}]});"
