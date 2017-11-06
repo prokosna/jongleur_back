@@ -1,13 +1,13 @@
 [package]
 authors = ["prokosna <prokosna@gmail.com>"]
 name = "jongleur_back"
-version = "0.1.0"
+version = "0.1.1"
 
 [dependencies]
 base64 = "0.7.0"
 blake2 = "0.6.1"
 bson = "0.9.0"
-config = "0.7.0"
+dotenv = "0.10.1"
 env_logger = "0.4.3"
 error-chain = "0.11.0"
 jsonwebtoken = "2.0.3"

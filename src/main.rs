@@ -8,7 +8,7 @@ extern crate blake2;
 #[macro_use(bson, doc)]
 extern crate bson;
 extern crate chrono;
-extern crate config;
+extern crate dotenv;
 extern crate env_logger;
 #[macro_use]
 extern crate error_chain;
@@ -47,6 +47,7 @@ use infra::db::MongoClient;
 use infra::session::RedisClient;
 
 fn main() {
+    dotenv::from_filename("./Config.env").ok();
     let cors_options = get_cors_options();
     rocket::ignite()
         .manage(MongoClient::init_pool())
