@@ -44,7 +44,7 @@ impl ResourceBuilder {
             name,
             password: hash_str(&password),
             website,
-            scope: Vec: new(),
+            scope: Vec::new(),
         }
     }
 
