@@ -44,12 +44,7 @@ impl ResourceBuilder {
             name,
             password: hash_str(&password),
             website,
-            scope: vec![
-                Scope {
-                    name: "openid".to_string(),
-                    description: "Access to personal information".to_string(),
-                },
-            ],
+            scope: Vec: new(),
         }
     }
 
