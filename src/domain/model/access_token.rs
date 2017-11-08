@@ -1,15 +1,14 @@
 use chrono::prelude::*;
-use uuid::Uuid;
 use time::Duration;
 
-use util::generate_uid;
-use domain::consts;
-use domain::error::general as eg;
-use self::eg::ResultExt;
+use config::AppConfig;
+use util::generate_random_id;
 
+/// `AccessToken` is a type that represents an *access token*
+/// in the context of OAuth2 and OpenID Connect.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AccessToken {
-    #[serde(rename = "_id")] pub id: String,
+    pub id: String,
     pub client_id: String,
     pub resource_id: String,
     pub token: String,
@@ -19,46 +18,46 @@ pub struct AccessToken {
     pub end_user_id: Option<String>,
     pub state: Option<String>,
     pub nonce: Option<String>,
-    pub is_valid: bool,
-    pub expires_at: DateTime<Utc>,
+    pub is_deleted: bool,
 }
 
 impl AccessToken {
-    pub fn update(&self) -> eg::Result<AccessToken> {
-        let mut new_token = self.clone();
-        let created_at = Utc::now();
-        let expires_at = created_at.clone() + Duration::seconds(self.expires_in);
-        new_token.token = generate_uid(64usize).chain_err(|| "generating uid failed")?;
-        new_token.created_at = created_at;
-        new_token.expires_at = expires_at;
-        Ok(new_token)
+    /// Updates an access token with a new token.
+    pub fn update(mut self) -> Self {
+        self.token = generate_random_id(64usize);
+        self.created_at = Utc::now();
+        self
+    }
+
+    pub fn expires_at(&self) -> DateTime<Utc> {
+        self.created_at.clone() + Duration::seconds(self.expires_in)
     }
 
     pub fn is_valid(&self) -> bool {
-        if self.expires_at.timestamp() < Utc::now().timestamp() {
-            false
-        } else {
-            self.is_valid
-        }
+        !(self.expires_at().timestamp() < Utc::now().timestamp() || self.is_deleted)
+    }
+
+    pub fn builder(client_id: &String, resource_id: &String) -> AccessTokenBuilder {
+        AccessTokenBuilder::new(client_id, resource_id)
     }
 }
 
 pub struct AccessTokenBuilder {
     client_id: String,
     resource_id: String,
+    end_user_id: Option<String>,
     expires_in: i64,
     scope: Vec<String>,
-    end_user_id: Option<String>,
     state: Option<String>,
     nonce: Option<String>,
 }
 
 impl AccessTokenBuilder {
-    pub fn new(client_id: String, resource_id: String) -> Self {
+    fn new(client_id: &String, resource_id: &String) -> Self {
         AccessTokenBuilder {
-            client_id,
-            resource_id,
-            expires_in: consts::DEFAULT_ACCESS_TOKEN_MAX_AGE_SEC,
+            client_id: client_id.clone(),
+            resource_id: resource_id.clone(),
+            expires_in: AppConfig::default_access_token_max_age_sec(),
             scope: Vec::new(),
             end_user_id: None,
             state: None,
@@ -70,41 +69,47 @@ impl AccessTokenBuilder {
         AccessTokenBuilder { expires_in, ..self }
     }
 
-    pub fn scope(self, scope: Vec<String>) -> Self {
-        AccessTokenBuilder { scope, ..self }
-    }
-
-    pub fn end_user_id(self, end_user_id: Option<String>) -> Self {
+    pub fn scope(self, scope: &Vec<String>) -> Self {
         AccessTokenBuilder {
-            end_user_id,
+            scope: scope.clone(),
             ..self
         }
     }
 
-    pub fn state(self, state: Option<String>) -> Self {
-        AccessTokenBuilder { state, ..self }
+    pub fn end_user_id(self, end_user_id: &Option<String>) -> Self {
+        AccessTokenBuilder {
+            end_user_id: end_user_id.clone(),
+            ..self
+        }
     }
 
-    pub fn nonce(self, nonce: Option<String>) -> Self {
-        AccessTokenBuilder { nonce, ..self }
+    pub fn state(self, state: &Option<String>) -> Self {
+        AccessTokenBuilder {
+            state: state.clone(),
+            ..self
+        }
     }
 
-    pub fn build(self) -> self::eg::Result<AccessToken> {
-        let created_at = Utc::now();
-        let expires_at = created_at.clone() + Duration::seconds(self.expires_in);
-        Ok(AccessToken {
-            id: Uuid::new_v4().simple().to_string(),
+    pub fn nonce(self, nonce: &Option<String>) -> Self {
+        AccessTokenBuilder {
+            nonce: nonce.clone(),
+            ..self
+        }
+    }
+
+    pub fn build(self) -> AccessToken {
+        AccessToken {
+            id: generate_random_id(32usize),
             client_id: self.client_id,
             resource_id: self.resource_id,
-            token: generate_uid(64usize).chain_err(|| "generating uid failed")?,
+            token: generate_random_id(64usize),
             expires_in: self.expires_in,
             created_at: Utc::now(),
             scope: self.scope,
             end_user_id: self.end_user_id,
             state: self.state,
             nonce: self.nonce,
-            is_valid: true,
-            expires_at,
-        })
+            is_deleted: false,
+        }
     }
 }

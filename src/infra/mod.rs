@@ -1,4 +1,3 @@
-pub mod db;
+pub mod persistence;
+pub mod rest;
 pub mod session;
-pub mod route;
-pub mod http;

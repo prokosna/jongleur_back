@@ -1,35 +1,35 @@
 use chrono::prelude::*;
 use time::Duration;
 
-use util::generate_uid;
-use domain::consts;
-use domain::error::general as eg;
-use self::eg::ResultExt;
+use config::AppConfig;
+use util::generate_random_id;
 
+/// `RefreshToken` is the type that contains a `refresh_token`
+/// in the context of OAuth2 and OpenID Connect.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RefreshToken {
-    #[serde(rename = "_id")] pub token: String,
+    pub token: String,
     pub access_token_id: String,
     pub id_token_id: Option<String>,
     pub created_at: DateTime<Utc>,
-    pub is_valid: bool,
     pub expires_at: DateTime<Utc>,
+    pub is_deleted: bool,
 }
 
 impl RefreshToken {
-    pub fn new(access_token_id: &String, id_token_id: Option<&String>) -> eg::Result<RefreshToken> {
+    pub fn new(access_token_id: &String, id_token_id: &Option<String>) -> RefreshToken {
         let now = Utc::now();
-        Ok(RefreshToken {
-            token: generate_uid(64usize).chain_err(|| "generating uid failed")?,
+        RefreshToken {
+            token: generate_random_id(64usize),
             access_token_id: access_token_id.clone(),
-            id_token_id: id_token_id.map(|x| x.clone()),
+            id_token_id: id_token_id.clone(),
             created_at: now,
-            is_valid: true,
-            expires_at: now + Duration::seconds(consts::DEFAULT_REFRESH_TOKEN_MAX_AGE_SEC),
-        })
+            expires_at: now + Duration::seconds(AppConfig::default_refresh_token_max_age_sec()),
+            is_deleted: false,
+        }
     }
 
-    pub fn is_valid(&self, refresh_token: &String) -> bool {
-        &self.token == refresh_token && self.is_valid
+    pub fn is_valid(&self) -> bool {
+        !(self.expires_at.timestamp() < Utc::now().timestamp() || self.is_deleted)
     }
 }

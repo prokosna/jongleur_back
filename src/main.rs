@@ -9,7 +9,6 @@ extern crate blake2;
 extern crate bson;
 extern crate chrono;
 extern crate dotenv;
-extern crate env_logger;
 #[macro_use]
 extern crate error_chain;
 extern crate jsonwebtoken;
@@ -34,74 +33,92 @@ extern crate serde_json;
 extern crate serde_urlencoded;
 extern crate time;
 extern crate url;
-extern crate uuid;
 
-mod application;
+mod app;
+mod config;
 mod domain;
 mod infra;
 mod util;
+mod server;
 
-use infra::http::get_cors_options;
-use infra::route;
-use infra::db::MongoClient;
+use rocket_cors::Cors;
+
+use infra::rest;
 use infra::session::RedisClient;
+
+fn configure_cors() -> Cors {
+    Cors {
+        ..Default::default()
+    }
+}
 
 fn main() {
     dotenv::from_filename("./Config.env").ok();
-    let cors_options = get_cors_options();
+    let server = server::build_server();
+    let cors = configure_cors();
     rocket::ignite()
-        .manage(MongoClient::init_pool())
         .manage(RedisClient::init_pool())
-        .manage(cors_options)
+        .manage(server)
+        .manage(cors)
         .mount("/", rocket_cors::catch_all_options_routes())
         .mount(
-            "clients",
+            "admins",
             routes![
-                route::clients::get_clients,
-                route::clients::get_client,
-                route::clients::get_private_client,
-                route::clients::post_client,
-                route::clients::put_private_client,
-                route::clients::delete_private_client,
-                route::clients::post_login,
-                route::clients::get_logout
+                rest::admin::login,
+                rest::admin::logout,
+                rest::admin::get_admin,
+                rest::admin::register_admin,
+                rest::admin::update_admin,
+                rest::admin::delete_admin
             ],
         )
         .mount(
-            "resources",
+            "clients",
             routes![
-                route::resources::get_resources,
-                route::resources::get_resource,
-                route::resources::get_private_resource,
-                route::resources::post_resource,
-                route::resources::put_private_resource,
-                route::resources::delete_private_resource,
-                route::resources::post_login,
-                route::resources::get_logout,
+                rest::client::login,
+                rest::client::logout,
+                rest::client::get_clients,
+                rest::client::get_client,
+                rest::client::get_detailed_client,
+                rest::client::register_client,
+                rest::client::update_client,
+                rest::client::delete_client
             ],
         )
         .mount(
             "end_users",
             routes![
-                route::end_users::get_end_users,
-                route::end_users::get_end_user,
-                route::end_users::get_private_end_user,
-                route::end_users::post_end_user,
-                route::end_users::put_private_end_user,
-                route::end_users::delete_private_end_user,
-                route::end_users::post_login,
-                route::end_users::get_logout
+                rest::end_user::login,
+                rest::end_user::logout,
+                rest::end_user::get_end_users,
+                rest::end_user::get_end_user,
+                rest::end_user::get_detailed_end_user,
+                rest::end_user::register_end_user,
+                rest::end_user::update_end_user,
+                rest::end_user::delete_end_user
+            ],
+        )
+        .mount(
+            "resources",
+            routes![
+                rest::resource::login,
+                rest::resource::logout,
+                rest::resource::get_resources,
+                rest::resource::get_resource,
+                rest::resource::get_detailed_resource,
+                rest::resource::register_resource,
+                rest::resource::update_resource,
+                rest::resource::delete_resource,
             ],
         )
         .mount(
             "oidc",
             routes![
-                route::oidc::get_authorize,
-                route::oidc::post_accept,
-                route::oidc::post_tokens,
-                route::oidc::get_key_pem,
-                route::oidc::get_userinfo,
-                route::oidc::post_introspect,
+                rest::oidc::authorize,
+                rest::oidc::accept_client,
+                rest::oidc::get_tokens,
+                rest::oidc::introspect,
+                rest::oidc::get_userinfo,
             ],
         )
         .launch();

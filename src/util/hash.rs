@@ -1,5 +1,6 @@
 use blake2::{Blake2b, Digest};
 
+/// Hash string by Blake2d and return a HEX string.
 pub fn hash_str(src: &String) -> String {
     let mut hasher = Blake2b::new();
     hasher.input(src.as_bytes());
