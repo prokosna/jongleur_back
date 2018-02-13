@@ -7,7 +7,7 @@ use rocket_cors::{self, Guard};
 use app::end_user::{DetailedEndUserRepr, EndUserRepr, EndUserService, EndUserServiceComponent,
                     RegisterEndUserCmd, UpdateEndUserCmd};
 use domain::error::domain as ed;
-use domain::constant;
+use constant;
 use infra::rest::common::{AuthorizationHeader, AuthorizationType, CommonListResponse,
                           CommonResponse};
 use infra::session::RedisStore;

@@ -7,7 +7,7 @@ use rocket_cors::{self, Guard};
 use app::resource::{DetailedResourceRepr, RegisterResourceCmd, ResourceRepr, ResourceService,
                     ResourceServiceComponent, UpdateResourceCmd};
 use domain::error::domain as ed;
-use domain::constant;
+use constant;
 use domain::model::Scope;
 use infra::rest::common::{AuthorizationHeader, AuthorizationType, CommonListResponse,
                           CommonResponse};

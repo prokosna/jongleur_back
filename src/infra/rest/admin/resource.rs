@@ -6,7 +6,7 @@ use rocket_cors::{self, Guard};
 
 use app::admin::{AdminRepr, AdminService, AdminServiceComponent, RegisterAdminCmd, UpdateAdminCmd};
 use domain::error::domain as ed;
-use domain::constant;
+use constant;
 use infra::rest::common::{AuthorizationHeader, AuthorizationType, CommonResponse};
 use infra::session::RedisStore;
 use util::generate_random_id;

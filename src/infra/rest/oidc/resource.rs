@@ -5,7 +5,7 @@ use rocket_cors::{self, Guard};
 use app::oidc::{GetTokensCmd, OidcService, OidcServiceComponent};
 use domain::error::domain as ed;
 use self::ed::ErrorKind as ek;
-use domain::constant;
+use constant;
 use domain::model::EndUserClaims;
 use domain::service::{AcceptClientCmd, AuthorizeCmd, AuthorizeRet, IntrospectCmd, IntrospectRet,
                       TokensRet, UserinfoCmd};

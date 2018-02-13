@@ -1,5 +1,5 @@
 use config::AppConfig;
-use domain::constant;
+use constant;
 use domain::error::domain as ed;
 use self::ed::ErrorKind as ek;
 use domain::model::{AccessToken, Client, EndUser, FlowType, Grant, GrantStatus, IdTokenClaims,

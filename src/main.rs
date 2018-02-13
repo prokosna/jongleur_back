@@ -36,6 +36,7 @@ extern crate url;
 
 mod app;
 mod config;
+mod constant;
 mod domain;
 mod infra;
 mod util;
