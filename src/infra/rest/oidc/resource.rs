@@ -178,3 +178,10 @@ pub fn get_userinfo<'r>(
         "Access token is required.".to_string(),
     ).into()))
 }
+
+#[get("/publickey")]
+pub fn get_publickey<'r>(cors: Guard<'r>, server: Server) -> rocket_cors::Responder<'r, String> {
+    let service = server.oidc_service();
+    let ret = service.get_publickey();
+    cors.responder(ret)
+}

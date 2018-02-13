@@ -4,9 +4,9 @@ use domain::model::{EndUserClaims, GrantType};
 use domain::service::{AcceptClientCmd, AcceptGrantCmd, AuthorizeCmd, AuthorizeRet,
                       AuthorizeService, AuthorizeServiceComponent, ClientCredentialsCmd,
                       ClientCredentialsService, ClientCredentialsServiceComponent, IntrospectCmd,
-                      IntrospectRet, IntrospectService, IntrospectServiceComponent,
-                      RefreshTokenCmd, RefreshTokenService, RefreshTokenServiceComponent,
-                      ResourceOwnerPasswordCredentialsCmd,
+                      IntrospectRet, IntrospectService, IntrospectServiceComponent, KeyService,
+                      KeyServiceComponent, RefreshTokenCmd, RefreshTokenService,
+                      RefreshTokenServiceComponent, ResourceOwnerPasswordCredentialsCmd,
                       ResourceOwnerPasswordCredentialsService,
                       ResourceOwnerPasswordCredentialsServiceComponent, TokensRet, UserinfoCmd,
                       UserinfoService, UserinfoServiceComponent};
@@ -28,7 +28,8 @@ pub trait OidcService
     + IntrospectServiceComponent
     + RefreshTokenServiceComponent
     + ResourceOwnerPasswordCredentialsServiceComponent
-    + UserinfoServiceComponent {
+    + UserinfoServiceComponent
+    + KeyServiceComponent {
     fn authorize(&self, cmd: &AuthorizeCmd) -> AuthorizeRet {
         let service = self.authorize_service();
         service.authorize(cmd)
@@ -103,6 +104,11 @@ pub trait OidcService
         let service = self.userinfo_service();
         service.get_userinfo(cmd)
     }
+
+    fn get_publickey(&self) -> String {
+        let service = self.key_service();
+        service.jwt_public_key_pem().clone()
+    }
 }
 
 pub trait OidcServiceComponent {
@@ -117,7 +123,8 @@ impl<
         + IntrospectServiceComponent
         + RefreshTokenServiceComponent
         + ResourceOwnerPasswordCredentialsServiceComponent
-        + UserinfoServiceComponent,
+        + UserinfoServiceComponent
+        + KeyServiceComponent,
 > OidcService for T
 {
 }

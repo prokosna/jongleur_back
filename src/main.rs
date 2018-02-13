@@ -119,6 +119,7 @@ fn main() {
                 rest::oidc::get_tokens,
                 rest::oidc::introspect,
                 rest::oidc::get_userinfo,
+                rest::oidc::get_publickey,
             ],
         )
         .launch();

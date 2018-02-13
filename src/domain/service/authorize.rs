@@ -348,9 +348,10 @@ fn generate_code_or_tokens(
 
     // Id token
     let id_token = if grant.response_type.has_id_token() {
-        let id_token = IdTokenClaims::from_end_user(&AppConfig::issuer(), end_user, &grant.client_id)
-            .nonce(&grant.nonce)
-            .publish(key_service.jwt_private_key())?;
+        let id_token =
+            IdTokenClaims::from_end_user(&AppConfig::issuer(), end_user, &grant.client_id)
+                .nonce(&grant.nonce)
+                .publish(key_service.jwt_private_key())?;
         id_token_repo.add(&id_token)?;
         Some(id_token)
     } else {
@@ -441,9 +442,10 @@ fn execute_accepting_grant(
 
     // Id token
     let id_token = if grant.response_type.has_id_token() {
-        let id_token = IdTokenClaims::from_end_user(&AppConfig::issuer(), &end_user, &grant.client_id)
-            .nonce(&grant.nonce)
-            .publish(key_service.jwt_private_key())?;
+        let id_token =
+            IdTokenClaims::from_end_user(&AppConfig::issuer(), &end_user, &grant.client_id)
+                .nonce(&grant.nonce)
+                .publish(key_service.jwt_private_key())?;
         id_token_repo.add(&id_token)?;
         Some(id_token)
     } else {
