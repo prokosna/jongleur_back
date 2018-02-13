@@ -1,9 +1,8 @@
 use chrono::prelude::*;
-use uuid::Uuid;
 use std::ops::IndexMut;
 
-use util::hash_str;
-use domain::error::general as eg;
+use domain::error::domain as ed;
+use util::{generate_random_id, hash_str};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AcceptedClient {
@@ -11,9 +10,10 @@ pub struct AcceptedClient {
     pub scope: Vec<String>,
 }
 
+/// `EndUser` is an end user in the context of OAuth2 and OpenID Connect.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EndUser {
-    #[serde(rename = "_id")] pub id: String,
+    pub id: String,
     pub password: String,
     pub name: String,
     pub email: String,
@@ -34,21 +34,26 @@ pub struct EndUser {
     pub accepted_clients: Vec<AcceptedClient>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-    pub last_authenticated_at: Option<DateTime<Utc>>,
-    pub is_valid: bool,
+    pub authenticated_at: Option<DateTime<Utc>>,
+    pub is_deleted: bool,
 }
 
 impl EndUser {
-    pub fn authenticate(&mut self, password: &String) -> bool {
-        if self.password == hash_str(&password) {
-            self.last_authenticated_at = Some(Utc::now());
-            true
-        } else {
-            false
-        }
+    /// Authenticates the end user by a password.
+    pub fn is_authenticated(&self, password: &String) -> bool {
+        self.password == hash_str(&password)
     }
 
-    pub fn add_accepted_client(&mut self, client: AcceptedClient) -> () {
+    pub fn update_authenticated_timestamp(&mut self) {
+        self.authenticated_at = Some(Utc::now());
+    }
+
+    /// Adds a new accepted client to the end user.
+    pub fn add_accepted_client(&mut self, client_id: &String, scope: &Vec<String>) {
+        let client = AcceptedClient {
+            client_id: client_id.clone(),
+            scope: scope.clone(),
+        };
         let pos = self.accepted_clients
             .iter()
             .position(|c| c.client_id == client.client_id);
@@ -67,6 +72,50 @@ impl EndUser {
             None => {
                 self.accepted_clients.push(client);
             }
+        }
+    }
+
+    /// Returns true if the scope contains new scope which requires new acceptance of this end user.
+    pub fn require_acceptance(&self, scope: &Vec<String>, client_id: &String) -> bool {
+        !(self.accepted_clients.iter().any(|c| {
+            &c.client_id == client_id && !scope.iter().any(|s1| !c.scope.iter().any(|s2| s1 == s2))
+        }))
+    }
+
+    pub fn update_password(
+        &mut self,
+        new_password: &String,
+        current_password: &String,
+    ) -> Result<(), ed::Error> {
+        if self.is_authenticated(current_password) {
+            self.password = hash_str(new_password);
+            Ok(())
+        } else {
+            Err(ed::ErrorKind::WrongPassword(format!("{}", self.id)).into())
+        }
+    }
+
+    pub fn update_timestamp(&mut self) {
+        self.updated_at = Utc::now();
+    }
+
+    pub fn builder(name: &String, password: &String, email: &String) -> EndUserBuilder {
+        EndUserBuilder {
+            name: name.clone(),
+            password: hash_str(&password),
+            email: email.clone(),
+            given_name: None,
+            family_name: None,
+            middle_name: None,
+            nickname: None,
+            profile: None,
+            picture: None,
+            website: None,
+            gender: None,
+            birthdate: None,
+            zoneinfo: None,
+            locale: None,
+            phone_number: None,
         }
     }
 }
@@ -90,75 +139,82 @@ pub struct EndUserBuilder {
 }
 
 impl EndUserBuilder {
-    pub fn new(name: String, password: String, email: String) -> Self {
+    pub fn given_name(self, given_name: &Option<String>) -> Self {
         EndUserBuilder {
-            name,
-            password: hash_str(&password),
-            email,
-            given_name: None,
-            family_name: None,
-            middle_name: None,
-            nickname: None,
-            profile: None,
-            picture: None,
-            website: None,
-            gender: None,
-            birthdate: None,
-            zoneinfo: None,
-            locale: None,
-            phone_number: None,
-        }
-    }
-
-    pub fn given_name(self, given_name: Option<String>) -> Self {
-        EndUserBuilder { given_name, ..self }
-    }
-    pub fn family_name(self, family_name: Option<String>) -> Self {
-        EndUserBuilder {
-            family_name,
+            given_name: given_name.clone(),
             ..self
         }
     }
-    pub fn middle_name(self, middle_name: Option<String>) -> Self {
+    pub fn family_name(self, family_name: &Option<String>) -> Self {
         EndUserBuilder {
-            middle_name,
+            family_name: family_name.clone(),
             ..self
         }
     }
-    pub fn nickname(self, nickname: Option<String>) -> Self {
-        EndUserBuilder { nickname, ..self }
-    }
-    pub fn profile(self, profile: Option<String>) -> Self {
-        EndUserBuilder { profile, ..self }
-    }
-    pub fn picture(self, picture: Option<String>) -> Self {
-        EndUserBuilder { picture, ..self }
-    }
-    pub fn website(self, website: Option<String>) -> Self {
-        EndUserBuilder { website, ..self }
-    }
-    pub fn gender(self, gender: Option<String>) -> Self {
-        EndUserBuilder { gender, ..self }
-    }
-    pub fn birthdate(self, birthdate: Option<NaiveDate>) -> Self {
-        EndUserBuilder { birthdate, ..self }
-    }
-    pub fn zoneinfo(self, zoneinfo: Option<String>) -> Self {
-        EndUserBuilder { zoneinfo, ..self }
-    }
-    pub fn locale(self, locale: Option<String>) -> Self {
-        EndUserBuilder { locale, ..self }
-    }
-    pub fn phone_number(self, phone_number: Option<String>) -> Self {
+    pub fn middle_name(self, middle_name: &Option<String>) -> Self {
         EndUserBuilder {
-            phone_number,
+            middle_name: middle_name.clone(),
             ..self
         }
     }
-    pub fn build(self) -> eg::Result<EndUser> {
+    pub fn nickname(self, nickname: &Option<String>) -> Self {
+        EndUserBuilder {
+            nickname: nickname.clone(),
+            ..self
+        }
+    }
+    pub fn profile(self, profile: &Option<String>) -> Self {
+        EndUserBuilder {
+            profile: profile.clone(),
+            ..self
+        }
+    }
+    pub fn picture(self, picture: &Option<String>) -> Self {
+        EndUserBuilder {
+            picture: picture.clone(),
+            ..self
+        }
+    }
+    pub fn website(self, website: &Option<String>) -> Self {
+        EndUserBuilder {
+            website: website.clone(),
+            ..self
+        }
+    }
+    pub fn gender(self, gender: &Option<String>) -> Self {
+        EndUserBuilder {
+            gender: gender.clone(),
+            ..self
+        }
+    }
+    pub fn birthdate(self, birthdate: &Option<NaiveDate>) -> Self {
+        EndUserBuilder {
+            birthdate: birthdate.clone(),
+            ..self
+        }
+    }
+    pub fn zoneinfo(self, zoneinfo: &Option<String>) -> Self {
+        EndUserBuilder {
+            zoneinfo: zoneinfo.clone(),
+            ..self
+        }
+    }
+    pub fn locale(self, locale: &Option<String>) -> Self {
+        EndUserBuilder {
+            locale: locale.clone(),
+            ..self
+        }
+    }
+    pub fn phone_number(self, phone_number: &Option<String>) -> Self {
+        EndUserBuilder {
+            phone_number: phone_number.clone(),
+            ..self
+        }
+    }
+    pub fn build(self) -> EndUser {
         let created_at = Utc::now();
-        Ok(EndUser {
-            id: Uuid::new_v4().simple().to_string(),
+        EndUser {
+            id: generate_random_id(32usize),
             password: self.password,
             name: self.name,
             email: self.email,
@@ -179,62 +235,8 @@ impl EndUserBuilder {
             accepted_clients: Vec::new(),
             created_at,
             updated_at: created_at,
-            last_authenticated_at: None,
-            is_valid: true,
-        })
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct EndUserClaims {
-    pub iss: String,
-    pub sub: String,
-    pub aud: String,
-    #[serde(skip_serializing_if = "Option::is_none")] pub auth_time: Option<i64>,
-    pub name: String,
-    pub email: String,
-    #[serde(skip_serializing_if = "Option::is_none")] pub given_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub family_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub middle_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub nickname: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub profile: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub picture: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub website: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub gender: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub birthdate: Option<NaiveDate>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub zoneinfo: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub locale: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub phone_number: Option<String>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
-}
-
-impl EndUserClaims {
-    pub fn from_end_user(issuer: &str, end_user: &EndUser, client_id: &String) -> Self {
-        EndUserClaims {
-            iss: issuer.to_string(),
-            sub: end_user.id.clone(),
-            aud: client_id.clone(),
-            auth_time: end_user
-                .last_authenticated_at
-                .as_ref()
-                .map(|t| t.timestamp()),
-            name: end_user.name.clone(),
-            email: end_user.email.clone(),
-            given_name: end_user.given_name.clone(),
-            family_name: end_user.family_name.clone(),
-            middle_name: end_user.middle_name.clone(),
-            nickname: end_user.nickname.clone(),
-            profile: end_user.profile.clone(),
-            picture: end_user.picture.clone(),
-            website: end_user.website.clone(),
-            gender: end_user.gender.clone(),
-            birthdate: end_user.birthdate.clone(),
-            zoneinfo: end_user.zoneinfo.clone(),
-            locale: end_user.locale.clone(),
-            phone_number: end_user.phone_number.clone(),
-            created_at: end_user.created_at.clone(),
-            updated_at: end_user.updated_at.clone(),
+            authenticated_at: None,
+            is_deleted: false,
         }
     }
 }

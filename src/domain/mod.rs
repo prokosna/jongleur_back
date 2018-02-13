@@ -1,5 +1,5 @@
-pub mod consts;
+pub mod constant;
 pub mod error;
 pub mod model;
 pub mod repository;
-pub mod session;
+pub mod service;

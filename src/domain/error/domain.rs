@@ -1,5 +1,7 @@
+// TODO: Should be divided to internal error and spec error
 error_chain! {
     errors {
+        // Specification errors
         InvalidRequest(desc: String) {
             description("invalid_request")
             display("Invalid request: {}", desc)
@@ -50,29 +52,45 @@ error_chain! {
             display("Temporarily unavailable: {}", desc)
         }
 
-        RequireLogin {
-            description("require_login")
-            display("Login is required.")
-        }
-
-        EntryNotFound {
-            description("entry_not_found")
-            display("The entry was not found. It may have been already deleted.")
-        }
-
-        LoginFailed {
-            description("login_failed")
-            display("Name or password is not correct.")
-        }
-
-        DuplicatedEntry {
-            description("duplicated_entry")
-            display("The entry already exists.")
+        InvalidToken(desc: String) {
+            description("invalid_token")
+            display("Invalid token: {}", desc)
         }
 
         UserinfoError(desc: String) {
             description("invalid_token")
             display("{}", desc)
+        }
+
+        // Application errors
+        RequireLogin(desc: String) {
+            description("login_required")
+            display("Login required: {}", desc)
+        }
+
+        EntityNotFound(desc: String) {
+            description("entity_not_found")
+            display("Entity not found: {}", desc)
+        }
+
+        LoginFailed(desc: String) {
+            description("login_failed")
+            display("Login failed: {}", desc)
+        }
+
+        DuplicatedEntity(desc: String) {
+            description("duplicated_entity")
+            display("Duplicated entity: {}", desc)
+        }
+
+        ConflictDetected(desc: String) {
+            description("conflict_detected")
+            display("Conflict detected: {}", desc)
+        }
+
+        WrongPassword(desc: String) {
+            description("wrong_password")
+            display("Wrong password: {}", desc)
         }
     }
 }

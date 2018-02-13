@@ -1,36 +1,37 @@
 use chrono::prelude::*;
-use uuid::Uuid;
 use jsonwebtoken::{decode, encode, Algorithm, Header, Validation};
 
-use domain::consts;
-use domain::model::end_user::EndUser;
+use config::AppConfig;
+use domain::model::{Client, EndUser};
 use domain::error::domain as ed;
+use util::generate_random_id;
 use self::ed::ResultExt;
 
+/// `IdToken` is the type contains `id_token` in the context of
+/// OAuth2 and OpenID Connect.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IdToken {
-    #[serde(rename = "_id")] pub id: String,
+    pub id: String,
+    pub end_user_id: String,
     pub token: String,
     pub created_at: DateTime<Utc>,
-    pub is_valid: bool,
     pub expires_at: DateTime<Utc>,
+    pub is_deleted: bool,
 }
 
 impl IdToken {
-    pub fn is_valid(&self, key: &String) -> bool {
+    /// Returns `true` if the IdToken is valid.
+    pub fn is_valid(&self, key: &Vec<u8>) -> bool {
         if let Ok(decoded) =
             decode::<IdTokenClaims>(&self.token, key.as_ref(), &Validation::default())
         {
-            if decoded.claims.exp < Utc::now().timestamp() {
-                false
-            } else {
-                self.is_valid
-            }
+            !(decoded.claims.exp < Utc::now().timestamp() || self.is_deleted)
         } else {
             false
         }
     }
 
+    /// Extracts IdTokenClaims from IdToken using a public key of an authorization server.
     pub fn extract_claims(&self, key: &Vec<u8>) -> Result<IdTokenClaims, ed::Error> {
         decode::<IdTokenClaims>(&self.token, key.as_ref(), &Validation::default())
             .map(|data| data.claims)
@@ -40,9 +41,30 @@ impl IdToken {
                 )
             })
     }
+
+    /// Refreshes a token of the IdToken.
+    pub fn update(
+        self,
+        client: &Client,
+        end_user: &EndUser,
+        public_key: &Vec<u8>,
+        private_key: &Vec<u8>,
+    ) -> Result<Self, ed::Error> {
+        let claims = self.extract_claims(public_key.as_ref())?;
+        let mut new_id_token =
+            IdTokenClaims::from_end_user(&AppConfig::issuer(), &end_user, &client.id)
+                .nonce(&claims.nonce)
+                .acr(&claims.acr)
+                .amr(&claims.amr)
+                .azp(&claims.azp)
+                .publish(private_key.as_ref())?;
+        new_id_token.id = self.id;
+        new_id_token.is_deleted = self.is_deleted;
+        Ok(new_id_token)
+    }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct IdTokenClaims {
     pub iss: String,
     pub sub: String,
@@ -63,7 +85,7 @@ impl IdTokenClaims {
             iss: issuer.clone(),
             sub: end_user_id.clone(),
             aud: client_id.clone(),
-            exp: now.timestamp() + consts::DEFAULT_ID_TOKEN_MAX_AGE_SEC,
+            exp: now.timestamp() + AppConfig::default_id_token_max_age_sec(),
             iat: now.timestamp(),
             auth_time: None,
             nonce: None,
@@ -79,12 +101,9 @@ impl IdTokenClaims {
             iss: issuer.to_string(),
             sub: end_user.id.clone(),
             aud: client_id.clone(),
-            exp: now.timestamp() + consts::DEFAULT_ID_TOKEN_MAX_AGE_SEC,
+            exp: now.timestamp() + AppConfig::default_id_token_max_age_sec(),
             iat: now.timestamp(),
-            auth_time: end_user
-                .last_authenticated_at
-                .as_ref()
-                .map(|t| t.timestamp()),
+            auth_time: end_user.authenticated_at.as_ref().map(|t| t.timestamp()),
             nonce: None,
             acr: None,
             amr: None,
@@ -100,27 +119,42 @@ impl IdTokenClaims {
         IdTokenClaims { iat, ..self }
     }
 
-    pub fn auth_time(self, auth_time: Option<i64>) -> Self {
-        IdTokenClaims { auth_time, ..self }
+    pub fn auth_time(self, auth_time: &Option<i64>) -> Self {
+        IdTokenClaims {
+            auth_time: auth_time.clone(),
+            ..self
+        }
     }
 
-    pub fn nonce(self, nonce: Option<String>) -> Self {
-        IdTokenClaims { nonce, ..self }
+    pub fn nonce(self, nonce: &Option<String>) -> Self {
+        IdTokenClaims {
+            nonce: nonce.clone(),
+            ..self
+        }
     }
 
-    pub fn acr(self, acr: Option<String>) -> Self {
-        IdTokenClaims { acr, ..self }
+    pub fn acr(self, acr: &Option<String>) -> Self {
+        IdTokenClaims {
+            acr: acr.clone(),
+            ..self
+        }
     }
 
-    pub fn amr(self, amr: Option<String>) -> Self {
-        IdTokenClaims { amr, ..self }
+    pub fn amr(self, amr: &Option<String>) -> Self {
+        IdTokenClaims {
+            amr: amr.clone(),
+            ..self
+        }
     }
 
-    pub fn azp(self, azp: Option<String>) -> Self {
-        IdTokenClaims { azp, ..self }
+    pub fn azp(self, azp: &Option<String>) -> Self {
+        IdTokenClaims {
+            azp: azp.clone(),
+            ..self
+        }
     }
 
-    pub fn publish(self, key: &Vec<u8>) -> ed::Result<IdToken> {
+    pub fn publish(self, key: &Vec<u8>) -> Result<IdToken, ed::Error> {
         let expires_at = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(self.exp, 0), Utc);
         let mut header = Header::default();
         header.alg = Algorithm::RS256;
@@ -128,11 +162,12 @@ impl IdTokenClaims {
             ed::ErrorKind::ServerError("Encoding claims to JWT failed.".to_string())
         })?;
         Ok(IdToken {
-            id: Uuid::new_v4().simple().to_string(),
+            id: generate_random_id(32usize),
+            end_user_id: self.sub.clone(),
             token: id_token,
             created_at: Utc::now(),
-            is_valid: true,
             expires_at,
+            is_deleted: false,
         })
     }
 }
