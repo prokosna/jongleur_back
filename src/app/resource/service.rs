@@ -1,5 +1,4 @@
 use chrono::prelude::*;
-
 use domain::error::domain as ed;
 use domain::model::{Resource, Scope};
 use domain::repository::{AdminRepository, AdminRepositoryComponent, ResourceRepository,
@@ -16,10 +15,10 @@ pub struct UpdateResourceCmd {
     pub target_id: String,
     pub self_id: Option<String>,
     pub admin_id: Option<String>,
-    pub name: String,
+    pub name: Option<String>,
     pub new_password: Option<String>,
-    pub website: String,
-    pub scope: Vec<Scope>,
+    pub website: Option<String>,
+    pub scope: Option<Vec<Scope>>,
     pub current_password: Option<String>,
 }
 
@@ -150,9 +149,15 @@ pub trait ResourceService
                             ed::ErrorKind::WrongPassword(format!("ID => {}", resource.id)).into(),
                         );
                     }
-                    resource.name = cmd.name.clone();
-                    resource.website = cmd.website.clone();
-                    resource.scope = cmd.scope.clone();
+                    if cmd.name.is_some() {
+                        resource.name = cmd.name.as_ref().unwrap().clone();
+                    }
+                    if cmd.website.is_some() {
+                        resource.website = cmd.website.as_ref().unwrap().clone();
+                    }
+                    if cmd.scope.is_some() {
+                        resource.scope = cmd.scope.as_ref().unwrap().clone();
+                    }
                     if cmd.new_password.is_some() {
                         resource.update_password(
                             cmd.new_password.as_ref().unwrap(),
@@ -168,9 +173,15 @@ pub trait ResourceService
                         .find_by_id(cmd.admin_id.as_ref().unwrap())?
                         .is_some()
                     {
-                        resource.name = cmd.name.clone();
-                        resource.website = cmd.website.clone();
-                        resource.scope = cmd.scope.clone();
+                        if cmd.name.is_some() {
+                            resource.name = cmd.name.as_ref().unwrap().clone();
+                        }
+                        if cmd.website.is_some() {
+                            resource.website = cmd.website.as_ref().unwrap().clone();
+                        }
+                        if cmd.scope.is_some() {
+                            resource.scope = cmd.scope.as_ref().unwrap().clone();
+                        }
                         resource.update_timestamp();
                         return repository.update(&resource);
                     }

@@ -27,8 +27,8 @@ pub struct UpdateEndUserCmd {
     pub target_id: String,
     pub self_id: Option<String>,
     pub admin_id: Option<String>,
-    pub name: String,
-    pub email: String,
+    pub name: Option<String>,
+    pub email: Option<String>,
     pub new_password: Option<String>,
     pub current_password: Option<String>,
     pub given_name: Option<String>,
@@ -193,15 +193,12 @@ pub trait EndUserService: AdminRepositoryComponent + EndUserRepositoryComponent 
             Some(mut end_user) => {
                 if cmd.self_id.is_some() && cmd.self_id.as_ref().unwrap() == &end_user.id {
                     // `EndUser` updates itself
-                    if !cmd.current_password.is_some()
-                        || !end_user.is_authenticated(cmd.current_password.as_ref().unwrap())
-                    {
-                        return Err(
-                            ed::ErrorKind::WrongPassword(format!("ID => {}", end_user.id)).into(),
-                        );
+                    if cmd.name.is_some() {
+                        end_user.name = cmd.name.as_ref().unwrap().clone();
                     }
-                    end_user.name = cmd.name.clone();
-                    end_user.email = cmd.email.clone();
+                    if cmd.email.is_some() {
+                        end_user.email = cmd.email.as_ref().unwrap().clone();
+                    }
                     end_user.given_name = cmd.given_name.clone();
                     end_user.family_name = cmd.family_name.clone();
                     end_user.middle_name = cmd.middle_name.clone();
@@ -229,8 +226,12 @@ pub trait EndUserService: AdminRepositoryComponent + EndUserRepositoryComponent 
                         .find_by_id(cmd.admin_id.as_ref().unwrap())?
                         .is_some()
                     {
-                        end_user.name = cmd.name.clone();
-                        end_user.email = cmd.email.clone();
+                        if cmd.name.is_some() {
+                            end_user.name = cmd.name.as_ref().unwrap().clone();
+                        }
+                        if cmd.email.is_some() {
+                            end_user.email = cmd.email.as_ref().unwrap().clone();
+                        }
                         end_user.given_name = cmd.given_name.clone();
                         end_user.family_name = cmd.family_name.clone();
                         end_user.middle_name = cmd.middle_name.clone();

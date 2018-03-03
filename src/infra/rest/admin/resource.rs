@@ -127,9 +127,9 @@ pub fn register_admin<'r>(
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AdminUpdateForm {
-    pub name: String,
+    pub name: Option<String>,
     pub new_password: Option<String>,
-    pub current_password: String,
+    pub current_password: Option<String>,
 }
 
 #[put("/<id>", data = "<input>")]

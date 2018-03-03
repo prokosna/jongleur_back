@@ -1,5 +1,4 @@
 use chrono::prelude::*;
-
 use domain::error::domain as ed;
 use domain::model::{Client, ClientType};
 use domain::repository::{AdminRepository, AdminRepositoryComponent, ClientRepository,
@@ -19,12 +18,12 @@ pub struct UpdateClientCmd {
     pub target_id: String,
     pub self_id: Option<String>,
     pub admin_id: Option<String>,
-    pub name: String,
+    pub name: Option<String>,
     pub new_password: Option<String>,
-    pub website: String,
-    pub client_type: String,
-    pub redirect_uris: Vec<String>,
-    pub resource_id: String,
+    pub website: Option<String>,
+    pub client_type: Option<String>,
+    pub redirect_uris: Option<Vec<String>>,
+    pub resource_id: Option<String>,
     pub current_password: Option<String>,
 }
 
@@ -159,23 +158,28 @@ pub trait ClientService
             Some(mut client) => {
                 if cmd.self_id.is_some() && cmd.self_id.as_ref().unwrap() == &client.id {
                     // `Client` updates itself
-                    if !cmd.current_password.is_some()
-                        || !client
-                            .is_authenticated_by_password(cmd.current_password.as_ref().unwrap())
-                    {
-                        return Err(ed::ErrorKind::WrongPassword(format!("ID => {}", client.id)).into());
+                    if cmd.name.is_some() {
+                        client.name = cmd.name.as_ref().unwrap().clone();
                     }
-                    if resource_repository.find_by_id(&cmd.resource_id)?.is_none() {
-                        return Err(ed::ErrorKind::EntityNotFound(format!(
-                            "Resource not found. ID => {}",
-                            cmd.resource_id
-                        )).into());
+                    if cmd.website.is_some() {
+                        client.website = cmd.website.as_ref().unwrap().clone();
                     }
-                    client.name = cmd.name.clone();
-                    client.website = cmd.website.clone();
-                    client.client_type = ClientType::new(&cmd.client_type)?;
-                    client.redirect_uris = cmd.redirect_uris.clone();
-                    client.resource_id = cmd.resource_id.clone();
+                    if cmd.client_type.is_some() {
+                        client.client_type = ClientType::new(cmd.client_type.as_ref().unwrap())?;
+                    }
+                    if cmd.redirect_uris.is_some() {
+                        client.redirect_uris = cmd.redirect_uris.as_ref().unwrap().clone();
+                    }
+                    if cmd.resource_id.is_some() {
+                        let resource_id = cmd.resource_id.as_ref().unwrap().clone();
+                        if resource_repository.find_by_id(&resource_id)?.is_none() {
+                            return Err(ed::ErrorKind::EntityNotFound(format!(
+                                "Resource not found. ID => {}",
+                                resource_id
+                            )).into());
+                        }
+                        client.resource_id = resource_id;
+                    }
                     if cmd.new_password.is_some() {
                         client.update_password(
                             cmd.new_password.as_ref().unwrap(),
@@ -191,17 +195,29 @@ pub trait ClientService
                         .find_by_id(cmd.admin_id.as_ref().unwrap())?
                         .is_some()
                     {
-                        if resource_repository.find_by_id(&cmd.resource_id)?.is_none() {
-                            return Err(ed::ErrorKind::EntityNotFound(format!(
-                                "Resource not found. ID => {}",
-                                cmd.resource_id
-                            )).into());
+                        if cmd.name.is_some() {
+                            client.name = cmd.name.as_ref().unwrap().clone();
                         }
-                        client.name = cmd.name.clone();
-                        client.website = cmd.website.clone();
-                        client.client_type = ClientType::new(&cmd.client_type)?;
-                        client.redirect_uris = cmd.redirect_uris.clone();
-                        client.resource_id = cmd.resource_id.clone();
+                        if cmd.website.is_some() {
+                            client.website = cmd.website.as_ref().unwrap().clone();
+                        }
+                        if cmd.client_type.is_some() {
+                            client.client_type =
+                                ClientType::new(cmd.client_type.as_ref().unwrap())?;
+                        }
+                        if cmd.redirect_uris.is_some() {
+                            client.redirect_uris = cmd.redirect_uris.as_ref().unwrap().clone();
+                        }
+                        if cmd.resource_id.is_some() {
+                            let resource_id = cmd.resource_id.as_ref().unwrap().clone();
+                            if resource_repository.find_by_id(&resource_id)?.is_none() {
+                                return Err(ed::ErrorKind::EntityNotFound(format!(
+                                    "Resource not found. ID => {}",
+                                    resource_id
+                                )).into());
+                            }
+                            client.resource_id = resource_id;
+                        }
                         client.update_timestamp();
                         return repository.update(&client);
                     }

@@ -186,10 +186,8 @@ pub fn register_end_user<'r>(
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EndUserUpdateForm {
-    pub name: String,
-    pub new_password: Option<String>,
-    pub current_password: Option<String>,
-    pub email: String,
+    pub name: Option<String>,
+    pub email: Option<String>,
     pub given_name: Option<String>,
     pub family_name: Option<String>,
     pub middle_name: Option<String>,
@@ -202,6 +200,8 @@ pub struct EndUserUpdateForm {
     pub zoneinfo: Option<String>,
     pub locale: Option<String>,
     pub phone_number: Option<String>,
+    pub new_password: Option<String>,
+    pub current_password: Option<String>,
 }
 
 #[put("/<id>", data = "<input>")]

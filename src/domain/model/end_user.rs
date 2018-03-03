@@ -91,7 +91,7 @@ impl EndUser {
             self.password = hash_str(new_password);
             Ok(())
         } else {
-            Err(ed::ErrorKind::WrongPassword(format!("{}", self.id)).into())
+            Err(ed::ErrorKind::WrongPassword(format!("ID => {}", self.id)).into())
         }
     }
 

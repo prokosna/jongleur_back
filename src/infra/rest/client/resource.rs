@@ -161,12 +161,12 @@ pub fn register_client<'r>(
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ClientUpdateForm {
-    pub name: String,
+    pub name: Option<String>,
+    pub website: Option<String>,
+    pub client_type: Option<String>,
+    pub redirect_uris: Option<Vec<String>>,
+    pub resource_id: Option<String>,
     pub new_password: Option<String>,
-    pub website: String,
-    pub client_type: String,
-    pub redirect_uris: Vec<String>,
-    pub resource_id: String,
     pub current_password: Option<String>,
 }
 

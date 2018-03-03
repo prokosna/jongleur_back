@@ -12,9 +12,9 @@ pub struct RegisterAdminCmd {
 pub struct UpdateAdminCmd {
     pub target_id: String,
     pub self_id: Option<String>,
-    pub name: String,
+    pub name: Option<String>,
     pub new_password: Option<String>,
-    pub current_password: String,
+    pub current_password: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -80,14 +80,13 @@ pub trait AdminService: AdminRepositoryComponent {
         match repository.find_by_id(&cmd.target_id)? {
             Some(mut admin) => {
                 if cmd.self_id.is_some() && cmd.self_id.as_ref().unwrap() == &admin.id {
-                    if !admin.is_authenticated(&cmd.current_password) {
-                        return Err(ed::ErrorKind::WrongPassword(format!("ID => {}", admin.id)).into());
+                    if cmd.name.is_some() {
+                        admin.name = cmd.name.as_ref().unwrap().clone();
                     }
-                    admin.name = cmd.name.clone();
                     if cmd.new_password.is_some() {
                         admin.update_password(
                             cmd.new_password.as_ref().unwrap(),
-                            &cmd.current_password,
+                            &cmd.current_password.as_ref().unwrap(),
                         )?;
                     }
                     admin.update_timestamp();

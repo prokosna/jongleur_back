@@ -158,10 +158,10 @@ pub fn register_resource<'r>(
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ResourceUpdateForm {
-    pub name: String,
+    pub name: Option<String>,
+    pub website: Option<String>,
+    pub scope: Option<Vec<Scope>>,
     pub new_password: Option<String>,
-    pub website: String,
-    pub scope: Vec<Scope>,
     pub current_password: Option<String>,
 }
 
