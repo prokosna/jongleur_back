@@ -199,18 +199,42 @@ pub trait EndUserService: AdminRepositoryComponent + EndUserRepositoryComponent 
                     if cmd.email.is_some() {
                         end_user.email = cmd.email.as_ref().unwrap().clone();
                     }
-                    end_user.given_name = cmd.given_name.clone();
-                    end_user.family_name = cmd.family_name.clone();
-                    end_user.middle_name = cmd.middle_name.clone();
-                    end_user.nickname = cmd.nickname.clone();
-                    end_user.profile = cmd.profile.clone();
-                    end_user.picture = cmd.picture.clone();
-                    end_user.website = cmd.website.clone();
-                    end_user.gender = cmd.gender.clone();
-                    end_user.birthdate = cmd.birthdate.clone();
-                    end_user.zoneinfo = cmd.zoneinfo.clone();
-                    end_user.locale = cmd.locale.clone();
-                    end_user.phone_number = cmd.phone_number.clone();
+                    if cmd.given_name.is_some() {
+                        end_user.given_name = cmd.given_name.clone();
+                    }
+                    if cmd.family_name.is_some() {
+                        end_user.family_name = cmd.family_name.clone();
+                    }
+                    if cmd.middle_name.is_some() {
+                        end_user.middle_name = cmd.middle_name.clone();
+                    }
+                    if cmd.nickname.is_some() {
+                        end_user.nickname = cmd.nickname.clone();
+                    }
+                    if cmd.profile.is_some() {
+                        end_user.profile = cmd.profile.clone();
+                    }
+                    if cmd.picture.is_some() {
+                        end_user.picture = cmd.picture.clone();
+                    }
+                    if cmd.website.is_some() {
+                        end_user.website = cmd.website.clone();
+                    }
+                    if cmd.gender.is_some() {
+                        end_user.gender = cmd.gender.clone();
+                    }
+                    if cmd.birthdate.is_some() {
+                        end_user.birthdate = cmd.birthdate.clone();
+                    }
+                    if cmd.zoneinfo.is_some() {
+                        end_user.zoneinfo = cmd.zoneinfo.clone();
+                    }
+                    if cmd.locale.is_some() {
+                        end_user.locale = cmd.locale.clone();
+                    }
+                    if cmd.phone_number.is_some() {
+                        end_user.phone_number = cmd.phone_number.clone();
+                    }
                     if cmd.new_password.is_some() {
                         end_user.update_password(
                             cmd.new_password.as_ref().unwrap(),
@@ -232,18 +256,42 @@ pub trait EndUserService: AdminRepositoryComponent + EndUserRepositoryComponent 
                         if cmd.email.is_some() {
                             end_user.email = cmd.email.as_ref().unwrap().clone();
                         }
-                        end_user.given_name = cmd.given_name.clone();
-                        end_user.family_name = cmd.family_name.clone();
-                        end_user.middle_name = cmd.middle_name.clone();
-                        end_user.nickname = cmd.nickname.clone();
-                        end_user.profile = cmd.profile.clone();
-                        end_user.picture = cmd.picture.clone();
-                        end_user.website = cmd.website.clone();
-                        end_user.gender = cmd.gender.clone();
-                        end_user.birthdate = cmd.birthdate.clone();
-                        end_user.zoneinfo = cmd.zoneinfo.clone();
-                        end_user.locale = cmd.locale.clone();
-                        end_user.phone_number = cmd.phone_number.clone();
+                        if cmd.given_name.is_some() {
+                            end_user.given_name = cmd.given_name.clone();
+                        }
+                        if cmd.family_name.is_some() {
+                            end_user.family_name = cmd.family_name.clone();
+                        }
+                        if cmd.middle_name.is_some() {
+                            end_user.middle_name = cmd.middle_name.clone();
+                        }
+                        if cmd.nickname.is_some() {
+                            end_user.nickname = cmd.nickname.clone();
+                        }
+                        if cmd.profile.is_some() {
+                            end_user.profile = cmd.profile.clone();
+                        }
+                        if cmd.picture.is_some() {
+                            end_user.picture = cmd.picture.clone();
+                        }
+                        if cmd.website.is_some() {
+                            end_user.website = cmd.website.clone();
+                        }
+                        if cmd.gender.is_some() {
+                            end_user.gender = cmd.gender.clone();
+                        }
+                        if cmd.birthdate.is_some() {
+                            end_user.birthdate = cmd.birthdate.clone();
+                        }
+                        if cmd.zoneinfo.is_some() {
+                            end_user.zoneinfo = cmd.zoneinfo.clone();
+                        }
+                        if cmd.locale.is_some() {
+                            end_user.locale = cmd.locale.clone();
+                        }
+                        if cmd.phone_number.is_some() {
+                            end_user.phone_number = cmd.phone_number.clone();
+                        }
                         end_user.update_timestamp();
                         return repository.update(&end_user);
                     }
