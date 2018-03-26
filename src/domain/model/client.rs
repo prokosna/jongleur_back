@@ -7,17 +7,17 @@ use util::{generate_random_id, hash_str};
 /// OAuth2 and OpenID Connect
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ClientType {
-    #[serde(rename = "confidential")]
+    #[serde(rename = "Confidential")]
     Confidential,
-    #[serde(rename = "public")]
+    #[serde(rename = "Public")]
     Public,
 }
 
 impl ClientType {
     pub fn new(client_type: &str) -> Result<Self, ed::Error> {
         match client_type {
-            "confidential" => Ok(ClientType::Confidential),
-            "public" => Ok(ClientType::Public),
+            "Confidential" => Ok(ClientType::Confidential),
+            "Public" => Ok(ClientType::Public),
             _ => Err(ed::ErrorKind::InvalidRequest(format!(
                 "Unsupported client type: {}",
                 client_type
