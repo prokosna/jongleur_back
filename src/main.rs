@@ -34,10 +34,6 @@ extern crate serde_urlencoded;
 extern crate time;
 extern crate url;
 
-use infra::rest;
-use infra::session::RedisClient;
-use rocket_cors::Cors;
-
 mod app;
 mod config;
 mod constant;
@@ -46,16 +42,28 @@ mod infra;
 mod server;
 mod util;
 
+use app::initialize::{InitializeService, InitializeServiceComponent};
+use infra::rest;
+use infra::session::RedisClient;
+use rocket_cors::Cors;
+use server::Server;
+
 fn configure_cors() -> Cors {
     Cors {
         ..Default::default()
     }
 }
 
+fn initialize(server: &Server) {
+    let service = server.initialize_service();
+    service.initialize();
+}
+
 fn main() {
     dotenv::from_filename("./Config.env").ok();
     let server = server::build_server();
     let cors = configure_cors();
+    initialize(&server);
     rocket::ignite()
         .manage(RedisClient::init_pool())
         .manage(server)

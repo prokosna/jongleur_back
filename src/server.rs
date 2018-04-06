@@ -1,11 +1,7 @@
-use mongo_driver::client::{ClientPool, Uri};
-use rocket::request::{self, FromRequest};
-use rocket::{Request, State};
-use std::sync::Arc;
-
 use app::admin::AdminServiceComponent;
 use app::client::ClientServiceComponent;
 use app::end_user::EndUserServiceComponent;
+use app::initialize::InitializeServiceComponent;
 use app::oidc::OidcServiceComponent;
 use app::resource::ResourceServiceComponent;
 use domain::repository::{AccessTokenRepositoryComponent, AdminRepositoryComponent,
@@ -19,6 +15,10 @@ use domain::service::{AuthorizeServiceComponent, ClientCredentialsServiceCompone
 use infra::persistence::{AccessTokenRepositoryMongo, AdminRepositoryMongo, ClientRepositoryMongo,
                          EndUserRepositoryMongo, GrantRepositoryMongo, IdTokenRepositoryMongo,
                          MongoClient, RefreshTokenRepositoryMongo, ResourceRepositoryMongo};
+use mongo_driver::client::{ClientPool, Uri};
+use rocket::request::{self, FromRequest};
+use rocket::{Request, State};
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct Server {
@@ -194,6 +194,14 @@ impl ResourceServiceComponent for Server {
     type ResourceService = Self;
 
     fn resource_service(&self) -> &Self::ResourceService {
+        self
+    }
+}
+
+impl InitializeServiceComponent for Server {
+    type InitializeService = Self;
+
+    fn initialize_service(&self) -> &Self::InitializeService {
         self
     }
 }

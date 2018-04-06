@@ -7,6 +7,9 @@ impl AppConfig {
     pub fn issuer() -> String {
         env::var("ISSUER").unwrap()
     }
+    pub fn default_admin_password() -> String {
+        env::var("DEFAULT_ADMIN_PASSWORD").unwrap()
+    }
     pub fn default_grant_max_age_sec() -> i64 {
         env::var("DEFAULT_GRANT_MAX_AGE_SEC")
             .map(|s| s.parse::<i64>().unwrap())
