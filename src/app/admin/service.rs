@@ -1,5 +1,4 @@
 use chrono::prelude::*;
-
 use domain::error::domain as ed;
 use domain::model::Admin;
 use domain::repository::{AdminRepository, AdminRepositoryComponent};
@@ -46,6 +45,13 @@ pub trait AdminService: AdminRepositoryComponent {
             }
         };
         Err(ed::ErrorKind::LoginFailed(format!("Name => {}", name)).into())
+    }
+
+    fn get_admins(&self) -> Result<Vec<AdminRepr>, ed::Error> {
+        let repository = self.admin_repository();
+        repository
+            .find_all()
+            .map(|v| v.iter().map(|r| AdminRepr::from_admin(&r)).collect())
     }
 
     fn get_admin(

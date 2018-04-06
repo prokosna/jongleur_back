@@ -7,7 +7,8 @@ use rocket_cors::{self, Guard};
 use app::admin::{AdminRepr, AdminService, AdminServiceComponent, RegisterAdminCmd, UpdateAdminCmd};
 use constant;
 use domain::error::domain as ed;
-use infra::rest::common::{AuthorizationHeader, AuthorizationType, CommonResponse};
+use infra::rest::common::{AuthorizationHeader, AuthorizationType, CommonListResponse,
+                          CommonResponse};
 use infra::session::RedisStore;
 use server::Server;
 use util::generate_random_id;
@@ -70,6 +71,15 @@ pub fn logout(
         }
     }
     Ok(())
+}
+
+#[get("/")]
+pub fn get_admins<'r>(
+    cors: Guard<'r>,
+    server: Server,
+) -> rocket_cors::Responder<Result<CommonListResponse<AdminRepr>, ed::Error>> {
+    let service = server.admin_service();
+    cors.responder(service.get_admins().map(|v| CommonListResponse { list: v }))
 }
 
 #[get("/<id>")]

@@ -34,6 +34,10 @@ extern crate serde_urlencoded;
 extern crate time;
 extern crate url;
 
+use infra::rest;
+use infra::session::RedisClient;
+use rocket_cors::Cors;
+
 mod app;
 mod config;
 mod constant;
@@ -41,11 +45,6 @@ mod domain;
 mod infra;
 mod server;
 mod util;
-
-use rocket_cors::Cors;
-
-use infra::rest;
-use infra::session::RedisClient;
 
 fn configure_cors() -> Cors {
     Cors {
@@ -67,6 +66,7 @@ fn main() {
             routes![
                 rest::admin::login,
                 rest::admin::logout,
+                rest::admin::get_admins,
                 rest::admin::get_admin,
                 rest::admin::register_admin,
                 rest::admin::update_admin,
