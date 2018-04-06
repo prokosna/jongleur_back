@@ -1,6 +1,6 @@
+use self::ed::ErrorKind as ek;
 use config::AppConfig;
 use domain::error::domain as ed;
-use self::ed::ErrorKind as ek;
 use domain::model::EndUserClaims;
 use domain::repository::{AccessTokenRepository, AccessTokenRepositoryComponent, EndUserRepository,
                          EndUserRepositoryComponent};
@@ -9,8 +9,7 @@ pub struct UserinfoCmd {
     pub access_token: String,
 }
 
-pub trait UserinfoService
-    : AccessTokenRepositoryComponent + EndUserRepositoryComponent {
+pub trait UserinfoService: AccessTokenRepositoryComponent + EndUserRepositoryComponent {
     fn get_userinfo(&self, cmd: &UserinfoCmd) -> Result<EndUserClaims, ed::Error> {
         let access_token_repo = self.access_token_repository();
         let end_user_repo = self.end_user_repository();

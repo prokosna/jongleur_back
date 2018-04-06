@@ -1,9 +1,8 @@
-use serde_json;
-
+use domain::error::domain as ed;
 use domain::model::{Grant, GrantStatus};
 use domain::repository::GrantRepository;
-use domain::error::domain as ed;
 use infra::persistence::{MongoClient, MongoModel};
+use serde_json;
 
 #[derive(Clone)]
 pub struct GrantRepositoryMongo {

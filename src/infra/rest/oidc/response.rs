@@ -1,7 +1,7 @@
-use rocket::response::{Responder, Response};
-use rocket::request::Request;
-use rocket::http::Status;
 use error_chain::ChainedError;
+use rocket::http::Status;
+use rocket::request::Request;
+use rocket::response::{Responder, Response};
 
 use domain::model::EndUserClaims;
 use domain::service::{AuthorizeRet, AuthorizeRetKind, IntrospectRet, TokensRet, TokensRetKind};

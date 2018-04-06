@@ -1,6 +1,6 @@
+use domain::error::domain as ed;
 use domain::model::Resource;
 use domain::repository::ResourceRepository;
-use domain::error::domain as ed;
 use infra::persistence::{MongoClient, MongoModel};
 
 #[derive(Clone)]

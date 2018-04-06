@@ -1,6 +1,6 @@
+use domain::error::domain as ed;
 use domain::model::AccessToken;
 use domain::repository::AccessTokenRepository;
-use domain::error::domain as ed;
 use infra::persistence::{MongoClient, MongoModel};
 
 #[derive(Clone)]

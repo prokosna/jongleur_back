@@ -1,18 +1,18 @@
-use rocket::response::{Responder, Response};
-use rocket::request::Request;
 use rocket::http::Status;
+use rocket::request::Request;
+use rocket::response::{Responder, Response};
 use rocket_contrib::Json;
 use rocket_cors::{self, Guard};
 
 use app::client::{ClientRepr, ClientService, ClientServiceComponent, DetailedClientRepr,
                   RegisterClientCmd, UpdateClientCmd};
-use domain::error::domain as ed;
 use constant;
+use domain::error::domain as ed;
 use infra::rest::common::{AuthorizationHeader, AuthorizationType, CommonListResponse,
                           CommonResponse};
 use infra::session::RedisStore;
-use util::generate_random_id;
 use server::Server;
+use util::generate_random_id;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ClientLoginForm {

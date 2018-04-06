@@ -1,6 +1,6 @@
-use rocket::response::{Responder, Response};
-use rocket::request::Request;
 use rocket::http::Status;
+use rocket::request::Request;
+use rocket::response::{Responder, Response};
 
 use app::end_user::{DetailedEndUserRepr, EndUserRepr};
 use infra::rest::common::CommonResponse;

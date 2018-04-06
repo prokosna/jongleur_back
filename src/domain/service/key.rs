@@ -4,29 +4,27 @@ use std::io::Read;
 use config::AppConfig;
 
 lazy_static! {
-  static ref PRIVATE_KEY: Vec<u8> = {
-    let filename = AppConfig::jwt_private_key();
-    let mut file = File::open(filename).unwrap();
-    let mut buf = Vec::<u8>::new();
-    file.read_to_end(&mut buf).unwrap();
-    buf
-  };
-
-  static ref PUBLIC_KEY: Vec<u8> = {
-    let filename = AppConfig::jwt_public_key();
-    let mut file = File::open(filename).unwrap();
-    let mut buf = Vec::<u8>::new();
-    file.read_to_end(&mut buf).unwrap();
-    buf
-  };
-
-  static ref PUBLIC_KEY_PEM: String = {
-    let filename = AppConfig::jwt_public_key_pem();
-    let mut file = File::open(filename).unwrap();
-    let mut content = String::new();
-    file.read_to_string(&mut content).unwrap();
-    content
-  };
+    static ref PRIVATE_KEY: Vec<u8> = {
+        let filename = AppConfig::jwt_private_key();
+        let mut file = File::open(filename).unwrap();
+        let mut buf = Vec::<u8>::new();
+        file.read_to_end(&mut buf).unwrap();
+        buf
+    };
+    static ref PUBLIC_KEY: Vec<u8> = {
+        let filename = AppConfig::jwt_public_key();
+        let mut file = File::open(filename).unwrap();
+        let mut buf = Vec::<u8>::new();
+        file.read_to_end(&mut buf).unwrap();
+        buf
+    };
+    static ref PUBLIC_KEY_PEM: String = {
+        let filename = AppConfig::jwt_public_key_pem();
+        let mut file = File::open(filename).unwrap();
+        let mut content = String::new();
+        file.read_to_string(&mut content).unwrap();
+        content
+    };
 }
 
 pub trait KeyService {

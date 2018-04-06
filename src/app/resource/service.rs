@@ -70,8 +70,7 @@ impl DetailedResourceRepr {
     }
 }
 
-pub trait ResourceService
-    : AdminRepositoryComponent + ResourceRepositoryComponent {
+pub trait ResourceService: AdminRepositoryComponent + ResourceRepositoryComponent {
     fn log_in(&self, name: &String, password: &String) -> Result<ResourceRepr, ed::Error> {
         let repository = self.resource_repository();
         let resource = repository.find_by_name(name)?;

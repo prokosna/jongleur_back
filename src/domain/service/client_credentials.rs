@@ -1,5 +1,5 @@
-use domain::error::domain as ed;
 use self::ed::ErrorKind as ek;
+use domain::error::domain as ed;
 use domain::model::{AccessToken, Resource};
 use domain::repository::{AccessTokenRepository, AccessTokenRepositoryComponent, ClientRepository,
                          ClientRepositoryComponent, ResourceRepository,
@@ -12,9 +12,9 @@ pub struct ClientCredentialsCmd {
     pub scope: Option<String>,
 }
 
-pub trait ClientCredentialsService
-    : AccessTokenRepositoryComponent + ClientRepositoryComponent + ResourceRepositoryComponent
-    {
+pub trait ClientCredentialsService:
+    AccessTokenRepositoryComponent + ClientRepositoryComponent + ResourceRepositoryComponent
+{
     fn execute_client_credentials(&self, cmd: &ClientCredentialsCmd) -> TokensRet {
         let access_token_repo = self.access_token_repository();
         let client_repo = self.client_repository();
@@ -35,8 +35,8 @@ pub trait ClientCredentialsServiceComponent {
 }
 
 impl<
-    T: AccessTokenRepositoryComponent + ClientRepositoryComponent + ResourceRepositoryComponent,
-> ClientCredentialsService for T
+        T: AccessTokenRepositoryComponent + ClientRepositoryComponent + ResourceRepositoryComponent,
+    > ClientCredentialsService for T
 {
 }
 

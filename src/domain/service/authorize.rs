@@ -1,7 +1,7 @@
+use self::ed::ErrorKind as ek;
 use config::AppConfig;
 use constant;
 use domain::error::domain as ed;
-use self::ed::ErrorKind as ek;
 use domain::model::{AccessToken, Client, EndUser, FlowType, Grant, GrantStatus, IdTokenClaims,
                     RefreshToken, Resource, ResponseType};
 use domain::repository::{AccessTokenRepository, AccessTokenRepositoryComponent, ClientRepository,
@@ -35,15 +35,16 @@ pub struct AcceptGrantCmd {
 }
 
 /// `AuthorizeService` provides functions for Authorization Code Flow.
-pub trait AuthorizeService
-    : AccessTokenRepositoryComponent
+pub trait AuthorizeService:
+    AccessTokenRepositoryComponent
     + ClientRepositoryComponent
     + EndUserRepositoryComponent
     + GrantRepositoryComponent
     + IdTokenRepositoryComponent
     + RefreshTokenRepositoryComponent
     + ResourceRepositoryComponent
-    + KeyServiceComponent {
+    + KeyServiceComponent
+{
     /// Execute Authorization Code flow.
     fn authorize(&self, cmd: &AuthorizeCmd) -> AuthorizeRet {
         let access_token_repo = self.access_token_repository();
@@ -177,15 +178,15 @@ pub trait AuthorizeServiceComponent {
 
 // Implement
 impl<
-    T: AccessTokenRepositoryComponent
-        + ClientRepositoryComponent
-        + EndUserRepositoryComponent
-        + GrantRepositoryComponent
-        + IdTokenRepositoryComponent
-        + RefreshTokenRepositoryComponent
-        + ResourceRepositoryComponent
-        + KeyServiceComponent,
-> AuthorizeService for T
+        T: AccessTokenRepositoryComponent
+            + ClientRepositoryComponent
+            + EndUserRepositoryComponent
+            + GrantRepositoryComponent
+            + IdTokenRepositoryComponent
+            + RefreshTokenRepositoryComponent
+            + ResourceRepositoryComponent
+            + KeyServiceComponent,
+    > AuthorizeService for T
 {
 }
 

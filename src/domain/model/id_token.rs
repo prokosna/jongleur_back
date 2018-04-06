@@ -1,11 +1,11 @@
 use chrono::prelude::*;
 use jsonwebtoken::{decode, encode, Algorithm, Header, Validation};
 
-use config::AppConfig;
-use domain::model::{Client, EndUser};
-use domain::error::domain as ed;
-use util::generate_random_id;
 use self::ed::ResultExt;
+use config::AppConfig;
+use domain::error::domain as ed;
+use domain::model::{Client, EndUser};
+use util::generate_random_id;
 
 /// `IdToken` is the type contains `id_token` in the context of
 /// OAuth2 and OpenID Connect.

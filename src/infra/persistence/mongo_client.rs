@@ -1,13 +1,13 @@
 use bson::Document;
-use mongo_driver::{MongoError, MongoErrorCode};
 use mongo_driver::client::ClientPool;
 use mongo_driver::collection::{FindAndModifyOperation, UpdateOptions};
 use mongo_driver::flags::{Flags, UpdateFlag};
+use mongo_driver::{MongoError, MongoErrorCode};
 use std::sync::Arc;
 
+use self::ed::ResultExt;
 use domain::error::domain as ed;
 use infra::persistence::MongoModel;
-use self::ed::ResultExt;
 
 /// `MongoClient` is the common Mongo client for repositories.
 #[derive(Clone)]

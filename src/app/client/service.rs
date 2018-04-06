@@ -79,9 +79,9 @@ impl DetailedClientRepr {
     }
 }
 
-pub trait ClientService
-    : AdminRepositoryComponent + ClientRepositoryComponent + ResourceRepositoryComponent
-    {
+pub trait ClientService:
+    AdminRepositoryComponent + ClientRepositoryComponent + ResourceRepositoryComponent
+{
     fn log_in(&self, name: &String, password: &String) -> Result<ClientRepr, ed::Error> {
         let repository = self.client_repository();
         let client = repository.find_by_name(name)?;
@@ -263,8 +263,7 @@ pub trait ClientServiceComponent {
 }
 
 // Implement
-impl<
-    T: AdminRepositoryComponent + ClientRepositoryComponent + ResourceRepositoryComponent,
-> ClientService for T
+impl<T: AdminRepositoryComponent + ClientRepositoryComponent + ResourceRepositoryComponent>
+    ClientService for T
 {
 }

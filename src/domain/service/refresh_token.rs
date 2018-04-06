@@ -1,5 +1,5 @@
-use domain::error::domain as ed;
 use self::ed::ErrorKind as ek;
+use domain::error::domain as ed;
 use domain::repository::{AccessTokenRepository, AccessTokenRepositoryComponent, ClientRepository,
                          ClientRepositoryComponent, EndUserRepository, EndUserRepositoryComponent,
                          IdTokenRepository, IdTokenRepositoryComponent, RefreshTokenRepository,
@@ -13,13 +13,14 @@ pub struct RefreshTokenCmd {
     pub scope: Option<String>,
 }
 
-pub trait RefreshTokenService
-    : AccessTokenRepositoryComponent
+pub trait RefreshTokenService:
+    AccessTokenRepositoryComponent
     + ClientRepositoryComponent
     + EndUserRepositoryComponent
     + IdTokenRepositoryComponent
     + RefreshTokenRepositoryComponent
-    + KeyServiceComponent {
+    + KeyServiceComponent
+{
     fn refresh_token(&self, cmd: &RefreshTokenCmd) -> TokensRet {
         let access_token_repo = self.access_token_repository();
         let client_repo = self.client_repository();
@@ -51,13 +52,13 @@ pub trait RefreshTokenServiceComponent {
 }
 
 impl<
-    T: AccessTokenRepositoryComponent
-        + ClientRepositoryComponent
-        + EndUserRepositoryComponent
-        + IdTokenRepositoryComponent
-        + RefreshTokenRepositoryComponent
-        + KeyServiceComponent,
-> RefreshTokenService for T
+        T: AccessTokenRepositoryComponent
+            + ClientRepositoryComponent
+            + EndUserRepositoryComponent
+            + IdTokenRepositoryComponent
+            + RefreshTokenRepositoryComponent
+            + KeyServiceComponent,
+    > RefreshTokenService for T
 {
 }
 

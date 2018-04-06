@@ -1,5 +1,5 @@
-use domain::model::{AccessToken, IdToken, RefreshToken};
 use domain::error::domain as ed;
+use domain::model::{AccessToken, IdToken, RefreshToken};
 
 #[derive(Serialize)]
 #[serde(untagged)]

@@ -1,9 +1,9 @@
 //! Responders for domain errors
-use rocket::response::{Responder, Response, ResponseBuilder};
-use rocket::request::Request;
-use rocket::http::Status;
-use std::collections::HashMap;
 use error_chain::ChainedError;
+use rocket::http::Status;
+use rocket::request::Request;
+use rocket::response::{Responder, Response, ResponseBuilder};
+use std::collections::HashMap;
 
 use domain::error::domain as ed;
 use infra::rest::common::CommonResponse;

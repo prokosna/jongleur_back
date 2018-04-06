@@ -1,12 +1,12 @@
 //! Common responders for Rocket
-use rocket::response::{Responder, Response, ResponseBuilder};
-use rocket::request::Request;
 use rocket::http::{ContentType, Status};
+use rocket::request::Request;
+use rocket::response::{Responder, Response, ResponseBuilder};
 use serde::Serialize;
 use serde_json;
 use serde_urlencoded;
-use std::io::Cursor;
 use std::collections::HashMap;
+use std::io::Cursor;
 
 pub struct CommonResponse {}
 

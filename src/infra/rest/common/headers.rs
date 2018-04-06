@@ -1,9 +1,9 @@
 //! Authorization Header Parser for Rocket
 use base64::decode;
-use std::str;
+use regex::{Captures, Regex};
 use rocket::Outcome;
 use rocket::request::{self, FromRequest, Request};
-use regex::{Captures, Regex};
+use std::str;
 
 pub enum AuthorizationType {
     Basic,

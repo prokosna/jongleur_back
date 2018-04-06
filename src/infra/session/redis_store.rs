@@ -5,10 +5,10 @@ use rocket::http::Status;
 use rocket::request::{self, FromRequest};
 use rocket::{Outcome, Request, State};
 
+use self::ed::ResultExt;
 use config::AppConfig;
 use domain::error::domain as ed;
 use infra::session::RedisClient;
-use self::ed::ResultExt;
 
 pub type Pool = r2d2::Pool<RedisConnectionManager>;
 pub type Connection = r2d2::PooledConnection<RedisConnectionManager>;

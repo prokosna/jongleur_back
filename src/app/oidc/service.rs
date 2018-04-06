@@ -1,5 +1,5 @@
-use domain::error::domain as ed;
 use self::ed::ErrorKind as ek;
+use domain::error::domain as ed;
 use domain::model::{EndUserClaims, GrantType};
 use domain::service::{AcceptClientCmd, AcceptGrantCmd, AuthorizeCmd, AuthorizeRet,
                       AuthorizeService, AuthorizeServiceComponent, ClientCredentialsCmd,
@@ -22,14 +22,15 @@ pub struct GetTokensCmd {
     pub password: Option<String>,
 }
 
-pub trait OidcService
-    : AuthorizeServiceComponent
+pub trait OidcService:
+    AuthorizeServiceComponent
     + ClientCredentialsServiceComponent
     + IntrospectServiceComponent
     + RefreshTokenServiceComponent
     + ResourceOwnerPasswordCredentialsServiceComponent
     + UserinfoServiceComponent
-    + KeyServiceComponent {
+    + KeyServiceComponent
+{
     fn authorize(&self, cmd: &AuthorizeCmd) -> AuthorizeRet {
         let service = self.authorize_service();
         service.authorize(cmd)
@@ -118,13 +119,13 @@ pub trait OidcServiceComponent {
 
 // Implement
 impl<
-    T: AuthorizeServiceComponent
-        + ClientCredentialsServiceComponent
-        + IntrospectServiceComponent
-        + RefreshTokenServiceComponent
-        + ResourceOwnerPasswordCredentialsServiceComponent
-        + UserinfoServiceComponent
-        + KeyServiceComponent,
-> OidcService for T
+        T: AuthorizeServiceComponent
+            + ClientCredentialsServiceComponent
+            + IntrospectServiceComponent
+            + RefreshTokenServiceComponent
+            + ResourceOwnerPasswordCredentialsServiceComponent
+            + UserinfoServiceComponent
+            + KeyServiceComponent,
+    > OidcService for T
 {
 }

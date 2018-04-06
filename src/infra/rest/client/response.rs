@@ -1,6 +1,6 @@
-use rocket::response::{Responder, Response};
-use rocket::request::Request;
 use rocket::http::Status;
+use rocket::request::Request;
+use rocket::response::{Responder, Response};
 
 use app::client::{ClientRepr, DetailedClientRepr};
 use infra::rest::common::CommonResponse;

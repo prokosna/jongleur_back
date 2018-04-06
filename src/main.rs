@@ -39,8 +39,8 @@ mod config;
 mod constant;
 mod domain;
 mod infra;
-mod util;
 mod server;
+mod util;
 
 use rocket_cors::Cors;
 

@@ -1,7 +1,7 @@
-use std::sync::Arc;
 use mongo_driver::client::{ClientPool, Uri};
 use rocket::request::{self, FromRequest};
 use rocket::{Request, State};
+use std::sync::Arc;
 
 use app::admin::AdminServiceComponent;
 use app::client::ClientServiceComponent;

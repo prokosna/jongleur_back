@@ -1,5 +1,5 @@
-use domain::error::domain as ed;
 use self::ed::ErrorKind as ek;
+use domain::error::domain as ed;
 use domain::model::AccessToken;
 use domain::repository::{AccessTokenRepository, AccessTokenRepositoryComponent, ClientRepository,
                          ClientRepositoryComponent, EndUserRepository, EndUserRepositoryComponent,
@@ -13,11 +13,12 @@ pub struct IntrospectCmd {
     pub token_type_hint: Option<String>,
 }
 
-pub trait IntrospectService
-    : AccessTokenRepositoryComponent
+pub trait IntrospectService:
+    AccessTokenRepositoryComponent
     + ClientRepositoryComponent
     + EndUserRepositoryComponent
-    + ResourceRepositoryComponent {
+    + ResourceRepositoryComponent
+{
     fn introspect(&self, cmd: &IntrospectCmd) -> Result<IntrospectRet, ed::Error> {
         let access_token_repo = self.access_token_repository();
         let client_repo = self.client_repository();
@@ -91,10 +92,10 @@ pub trait IntrospectServiceComponent {
 }
 
 impl<
-    T: AccessTokenRepositoryComponent
-        + ClientRepositoryComponent
-        + EndUserRepositoryComponent
-        + ResourceRepositoryComponent,
-> IntrospectService for T
+        T: AccessTokenRepositoryComponent
+            + ClientRepositoryComponent
+            + EndUserRepositoryComponent
+            + ResourceRepositoryComponent,
+    > IntrospectService for T
 {
 }

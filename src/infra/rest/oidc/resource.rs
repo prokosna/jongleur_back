@@ -2,10 +2,10 @@ use rocket::request::LenientForm;
 use rocket_contrib::Json;
 use rocket_cors::{self, Guard};
 
-use app::oidc::{GetTokensCmd, OidcService, OidcServiceComponent};
-use domain::error::domain as ed;
 use self::ed::ErrorKind as ek;
+use app::oidc::{GetTokensCmd, OidcService, OidcServiceComponent};
 use constant;
+use domain::error::domain as ed;
 use domain::model::EndUserClaims;
 use domain::service::{AcceptClientCmd, AuthorizeCmd, AuthorizeRet, IntrospectCmd, IntrospectRet,
                       TokensRet, UserinfoCmd};

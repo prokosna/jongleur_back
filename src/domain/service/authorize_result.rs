@@ -1,5 +1,5 @@
-use domain::model::{AccessToken, IdToken, Scope};
 use domain::error::domain as ed;
+use domain::model::{AccessToken, IdToken, Scope};
 
 #[derive(Serialize)]
 #[serde(untagged)]
