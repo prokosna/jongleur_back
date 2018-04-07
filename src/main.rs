@@ -131,5 +131,6 @@ fn main() {
                 rest::oidc::get_publickey,
             ],
         )
+        .mount("health", routes![rest::health::get_health,])
         .launch();
 }

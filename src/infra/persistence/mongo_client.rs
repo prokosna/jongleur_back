@@ -1,13 +1,12 @@
+use self::ed::ResultExt;
 use bson::Document;
+use domain::error::domain as ed;
+use infra::persistence::MongoModel;
 use mongo_driver::client::ClientPool;
 use mongo_driver::collection::{FindAndModifyOperation, UpdateOptions};
 use mongo_driver::flags::{Flags, UpdateFlag};
 use mongo_driver::{MongoError, MongoErrorCode};
 use std::sync::Arc;
-
-use self::ed::ResultExt;
-use domain::error::domain as ed;
-use infra::persistence::MongoModel;
 
 /// `MongoClient` is the common Mongo client for repositories.
 #[derive(Clone)]
@@ -43,6 +42,27 @@ impl MongoClient {
                     query
                 ))
             })
+    }
+
+    pub fn find_and_modify<T: MongoModel>(
+        &self,
+        query: &Document,
+        modify: &Document,
+    ) -> Result<Option<T>, ed::Error> {
+        let coll_name = T::collection_name();
+        let client = self.client_pool.pop();
+        let coll = client.get_collection(self.db_name.clone(), coll_name);
+        let operation = FindAndModifyOperation::Update(&modify);
+        let ret = coll.find_and_modify(query, operation, None);
+        ret.map(|doc| match doc.get_document("value") {
+            Ok(v) => Some(T::from_doc(&v)),
+            Err(_) => None,
+        }).chain_err(|| {
+            ed::ErrorKind::ServerError(format!(
+                "Unexpected error occurred when finding the documents. {}",
+                query
+            ))
+        })
     }
 
     pub fn insert<T: MongoModel>(&self, value: &T) -> Result<(), ed::Error> {
@@ -153,24 +173,22 @@ impl MongoClient {
         }
     }
 
-    pub fn find_and_modify<T: MongoModel>(
-        &self,
-        query: &Document,
-        modify: &Document,
-    ) -> Result<Option<T>, ed::Error> {
+    pub fn remove<T: MongoModel>(&self, value: &T) -> Result<(), ed::Error> {
         let coll_name = T::collection_name();
         let client = self.client_pool.pop();
         let coll = client.get_collection(self.db_name.clone(), coll_name);
-        let operation = FindAndModifyOperation::Update(&modify);
-        let ret = coll.find_and_modify(query, operation, None);
-        ret.map(|doc| match doc.get_document("value") {
-            Ok(v) => Some(T::from_doc(&v)),
-            Err(_) => None,
-        }).chain_err(|| {
-            ed::ErrorKind::ServerError(format!(
-                "Unexpected error occurred when finding the documents. {}",
-                query
-            ))
-        })
+        let key_name = T::key_name();
+        let key_value = value.key_value();
+        let selector = doc! {key_name => key_value};
+        let ret = coll.remove(&selector, None);
+        match ret {
+            Ok(_) => Ok(()),
+            Err(e) => Err(ed::Error::with_chain(
+                e,
+                ed::ErrorKind::ServerError(
+                    "Unexpected error occurred when removing the document".to_string(),
+                ),
+            )),
+        }
     }
 }

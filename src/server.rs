@@ -1,20 +1,23 @@
 use app::admin::AdminServiceComponent;
 use app::client::ClientServiceComponent;
 use app::end_user::EndUserServiceComponent;
+use app::health::HealthServiceComponent;
 use app::initialize::InitializeServiceComponent;
 use app::oidc::OidcServiceComponent;
 use app::resource::ResourceServiceComponent;
 use domain::repository::{AccessTokenRepositoryComponent, AdminRepositoryComponent,
                          ClientRepositoryComponent, EndUserRepositoryComponent,
-                         GrantRepositoryComponent, IdTokenRepositoryComponent,
-                         RefreshTokenRepositoryComponent, ResourceRepositoryComponent};
+                         GrantRepositoryComponent, HealthRepositoryComponent,
+                         IdTokenRepositoryComponent, RefreshTokenRepositoryComponent,
+                         ResourceRepositoryComponent};
 use domain::service::{AuthorizeServiceComponent, ClientCredentialsServiceComponent,
                       IntrospectServiceComponent, KeyServiceComponent,
                       RefreshTokenServiceComponent,
                       ResourceOwnerPasswordCredentialsServiceComponent, UserinfoServiceComponent};
 use infra::persistence::{AccessTokenRepositoryMongo, AdminRepositoryMongo, ClientRepositoryMongo,
-                         EndUserRepositoryMongo, GrantRepositoryMongo, IdTokenRepositoryMongo,
-                         MongoClient, RefreshTokenRepositoryMongo, ResourceRepositoryMongo};
+                         EndUserRepositoryMongo, GrantRepositoryMongo, HealthRepositoryMongo,
+                         IdTokenRepositoryMongo, MongoClient, RefreshTokenRepositoryMongo,
+                         ResourceRepositoryMongo};
 use mongo_driver::client::{ClientPool, Uri};
 use rocket::request::{self, FromRequest};
 use rocket::{Request, State};
@@ -27,6 +30,7 @@ pub struct Server {
     client_repository: ClientRepositoryMongo,
     end_user_repository: EndUserRepositoryMongo,
     grant_repository: GrantRepositoryMongo,
+    health_repository: HealthRepositoryMongo,
     id_token_repository: IdTokenRepositoryMongo,
     refresh_token_repository: RefreshTokenRepositoryMongo,
     resource_repository: ResourceRepositoryMongo,
@@ -71,6 +75,14 @@ impl GrantRepositoryComponent for Server {
 
     fn grant_repository(&self) -> &Self::GrantRepository {
         &self.grant_repository
+    }
+}
+
+impl HealthRepositoryComponent for Server {
+    type HealthRepository = HealthRepositoryMongo;
+
+    fn health_repository(&self) -> &Self::HealthRepository {
+        &self.health_repository
     }
 }
 
@@ -206,6 +218,14 @@ impl InitializeServiceComponent for Server {
     }
 }
 
+impl HealthServiceComponent for Server {
+    type HealthService = Self;
+
+    fn health_service(&self) -> &Self::HealthService {
+        self
+    }
+}
+
 // For Rocket shared state
 impl<'a, 'r> FromRequest<'a, 'r> for Server {
     type Error = ();
@@ -235,6 +255,9 @@ pub fn build_server() -> Server {
             mongo_client: MongoClient::new(&db_name, pool.clone()),
         },
         grant_repository: GrantRepositoryMongo {
+            mongo_client: MongoClient::new(&db_name, pool.clone()),
+        },
+        health_repository: HealthRepositoryMongo {
             mongo_client: MongoClient::new(&db_name, pool.clone()),
         },
         id_token_repository: IdTokenRepositoryMongo {
