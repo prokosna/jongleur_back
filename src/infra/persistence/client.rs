@@ -27,6 +27,10 @@ impl ClientRepository for ClientRepositoryMongo {
         let query = doc! {"name" => name, "is_deleted": false};
         self.mongo_client.find(&query).map(|mut v| v.pop())
     }
+    fn find_by_resource_id(&self, id: &String) -> Result<Vec<Client>, ed::Error> {
+        let query = doc! {"resource_id": id, "is_deleted": false};
+        self.mongo_client.find(&query)
+    }
     fn find_all(&self) -> Result<Vec<Client>, ed::Error> {
         let query = doc! {"is_deleted": false};
         self.mongo_client.find(&query)

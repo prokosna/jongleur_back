@@ -87,6 +87,7 @@ fn main() {
                 rest::client::login,
                 rest::client::logout,
                 rest::client::get_clients,
+                rest::client::get_clients_with_params,
                 rest::client::get_client,
                 rest::client::get_detailed_client,
                 rest::client::register_client,

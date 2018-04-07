@@ -5,6 +5,10 @@ use domain::repository::{AdminRepository, AdminRepositoryComponent, ClientReposi
                          ClientRepositoryComponent, ResourceRepository,
                          ResourceRepositoryComponent};
 
+pub struct GetClientsCmd {
+    pub resource_id: Option<String>,
+}
+
 pub struct RegisterClientCmd {
     pub name: String,
     pub password: String,
@@ -93,11 +97,17 @@ pub trait ClientService:
         Err(ed::ErrorKind::LoginFailed(format!("Name => {}", name)).into())
     }
 
-    fn get_clients(&self) -> Result<Vec<ClientRepr>, ed::Error> {
+    fn get_clients(&self, cmd: GetClientsCmd) -> Result<Vec<ClientRepr>, ed::Error> {
         let repository = self.client_repository();
-        repository
-            .find_all()
-            .map(|v| v.iter().map(|r| ClientRepr::from_client(&r)).collect())
+        if let Some(id) = cmd.resource_id {
+            repository
+                .find_by_resource_id(&id)
+                .map(|v| v.iter().map(|r| ClientRepr::from_client(&r)).collect())
+        } else {
+            repository
+                .find_all()
+                .map(|v| v.iter().map(|r| ClientRepr::from_client(&r)).collect())
+        }
     }
 
     fn get_client(&self, id: &String) -> Result<ClientRepr, ed::Error> {

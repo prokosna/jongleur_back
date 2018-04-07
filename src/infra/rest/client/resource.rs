@@ -5,7 +5,7 @@ use rocket_contrib::Json;
 use rocket_cors::{self, Guard};
 
 use app::client::{ClientRepr, ClientService, ClientServiceComponent, DetailedClientRepr,
-                  RegisterClientCmd, UpdateClientCmd};
+                  GetClientsCmd, RegisterClientCmd, UpdateClientCmd};
 use constant;
 use domain::error::domain as ed;
 use infra::rest::common::{AuthorizationHeader, AuthorizationType, CommonListResponse,
@@ -24,6 +24,11 @@ pub struct ClientLoginForm {
 pub struct ClientLoginResponse {
     pub sid: String,
     pub client_id: String,
+}
+
+#[derive(Deserialize, Debug, FromForm)]
+pub struct GetClientsParams {
+    pub resource_id: Option<String>,
 }
 
 impl<'r> Responder<'r> for ClientLoginResponse {
@@ -80,9 +85,27 @@ pub fn get_clients<'r>(
     server: Server,
 ) -> rocket_cors::Responder<Result<CommonListResponse<ClientRepr>, ed::Error>> {
     let service = server.client_service();
+    let cmd = GetClientsCmd { resource_id: None };
     cors.responder(
         service
-            .get_clients()
+            .get_clients(cmd)
+            .map(|v| CommonListResponse { list: v }),
+    )
+}
+
+#[get("/?<get_clients_params>")]
+pub fn get_clients_with_params<'r>(
+    cors: Guard<'r>,
+    get_clients_params: GetClientsParams,
+    server: Server,
+) -> rocket_cors::Responder<Result<CommonListResponse<ClientRepr>, ed::Error>> {
+    let service = server.client_service();
+    let cmd = GetClientsCmd {
+        resource_id: get_clients_params.resource_id.clone(),
+    };
+    cors.responder(
+        service
+            .get_clients(cmd)
             .map(|v| CommonListResponse { list: v }),
     )
 }
