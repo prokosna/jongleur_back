@@ -9,6 +9,12 @@ pub trait MongoModel: MongoSerializable {
         "id".to_string()
     }
     fn key_value(&self) -> String;
+    fn version_name() -> Option<String> {
+        None
+    }
+    fn version_value(&self) -> Option<String> {
+        None
+    }
 }
 
 pub trait MongoSerializable {
