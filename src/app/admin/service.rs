@@ -110,8 +110,14 @@ pub trait AdminService: AdminRepositoryComponent {
         let repository = self.admin_repository();
         match repository.find_by_id(target_id)? {
             Some(admin) => {
-                if self_id.is_some() && self_id.as_ref().unwrap() == &admin.id {
-                    return repository.remove(admin);
+                // All admins can delete any admins
+                if let Some(id) = self_id {
+                    match repository.find_by_id(id)? {
+                        Some(_) => {
+                            return repository.remove(admin);
+                        }
+                        None => {}
+                    }
                 }
                 return Err(ed::ErrorKind::AccessDenied(format!("ID => {}", target_id)).into());
             }
