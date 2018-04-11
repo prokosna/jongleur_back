@@ -1,19 +1,15 @@
-use rocket::request::LenientForm;
-use rocket_contrib::Json;
-use rocket_cors::{self, Guard};
-
 use self::ed::ErrorKind as ek;
+use actix_web::*;
 use app::oidc::{GetTokensCmd, OidcService, OidcServiceComponent};
 use constant;
 use domain::error::domain as ed;
 use domain::model::EndUserClaims;
 use domain::service::{AcceptClientCmd, AuthorizeCmd, AuthorizeRet, IntrospectCmd, IntrospectRet,
                       TokensRet, UserinfoCmd};
-use infra::rest::common::{AuthorizationHeader, AuthorizationType};
-use infra::session::RedisStore;
-use server::Server;
+use infra::rest::middleware::AuthorizationType;
+use server::ApplicationState;
 
-#[derive(Deserialize, Debug, FromForm)]
+#[derive(Deserialize, Debug)]
 pub struct AuthorizeParams {
     pub response_type: String,
     pub client_id: String,
@@ -23,31 +19,42 @@ pub struct AuthorizeParams {
     pub nonce: Option<String>,
 }
 
-#[get("/authorize?<authorize_params>")]
 pub fn authorize(
-    authorize_params: AuthorizeParams,
-    authorization_header: AuthorizationHeader,
-    redis_store: RedisStore,
-    server: Server,
+    req: HttpRequest<ApplicationState>,
+    query: Query<AuthorizeParams>,
 ) -> AuthorizeRet {
-    if let AuthorizationType::Bearer = authorization_header.auth_type {
-        if let Some(token) = authorization_header.token {
-            let end_user_id = redis_store.get(&token, constant::END_USER_SESS_ID_FIELD);
-            if let Err(e) = end_user_id {
-                return AuthorizeRet::error(e, None, None);
-            }
-            let cmd = AuthorizeCmd {
-                end_user_id: end_user_id.unwrap(),
-                client_id: authorize_params.client_id.clone(),
-                response_type: authorize_params.response_type.clone(),
-                redirect_uri: authorize_params.redirect_uri.clone(),
-                scope: authorize_params.scope.clone(),
-                state: authorize_params.state.clone(),
-                nonce: authorize_params.nonce.clone(),
-            };
-            let service = server.oidc_service();
-            return service.authorize(&cmd);
+    let server = &req.state().server;
+    let redis_store = &req.state().redis_pool.get_store();
+    let redis_store = match redis_store {
+        Ok(s) => s,
+        Err(_) => {
+            return AuthorizeRet::error(
+                ek::TemporarilyUnavailable("Redis cluster is not ready".to_string()).into(),
+                None,
+                None,
+            );
         }
+    };
+    let auth = req.clone()
+        .extensions()
+        .get::<AuthorizationType>()
+        .map(|v| v.clone());
+    if let Some(AuthorizationType::Bearer { token }) = auth {
+        let end_user_id = redis_store.get(&token, constant::END_USER_SESS_ID_FIELD);
+        if let Err(e) = end_user_id {
+            return AuthorizeRet::error(e, None, None);
+        }
+        let cmd = AuthorizeCmd {
+            end_user_id: end_user_id.unwrap(),
+            client_id: query.client_id.clone(),
+            response_type: query.response_type.clone(),
+            redirect_uri: query.redirect_uri.clone(),
+            scope: query.scope.clone(),
+            state: query.state.clone(),
+            nonce: query.nonce.clone(),
+        };
+        let service = server.oidc_service();
+        return service.authorize(&cmd);
     }
     AuthorizeRet::error(
         ek::RequireLogin("Login required.".to_string()).into(),
@@ -62,28 +69,38 @@ pub struct AcceptanceForm {
     pub grant_id: String,
 }
 
-#[post("/accept", data = "<input>")]
 pub fn accept_client(
-    input: Json<AcceptanceForm>,
-    authorization_header: AuthorizationHeader,
-    redis_store: RedisStore,
-    server: Server,
+    req: HttpRequest<ApplicationState>,
+    form: Json<AcceptanceForm>,
 ) -> AuthorizeRet {
-    if let AuthorizationType::Bearer = authorization_header.auth_type {
-        if let Some(token) = authorization_header.token {
-            let end_user_id = redis_store.get(&token, constant::END_USER_SESS_ID_FIELD);
-            if let Err(e) = end_user_id {
-                return AuthorizeRet::error(e, None, None);
-            }
-            let form = input.into_inner();
-            let cmd = AcceptClientCmd {
-                end_user_id: end_user_id.unwrap(),
-                action: form.action.clone(),
-                grant_id: form.grant_id.clone(),
-            };
-            let service = server.oidc_service();
-            return service.accept_client(&cmd);
+    let server = &req.state().server;
+    let redis_store = &req.state().redis_pool.get_store();
+    let redis_store = match redis_store {
+        Ok(s) => s,
+        Err(_) => {
+            return AuthorizeRet::error(
+                ek::TemporarilyUnavailable("Redis cluster is not ready".to_string()).into(),
+                None,
+                None,
+            );
         }
+    };
+    let auth = req.clone()
+        .extensions()
+        .get::<AuthorizationType>()
+        .map(|v| v.clone());
+    if let Some(AuthorizationType::Bearer { token }) = auth {
+        let end_user_id = redis_store.get(&token, constant::END_USER_SESS_ID_FIELD);
+        if let Err(e) = end_user_id {
+            return AuthorizeRet::error(e, None, None);
+        }
+        let cmd = AcceptClientCmd {
+            end_user_id: end_user_id.unwrap(),
+            action: form.action.clone(),
+            grant_id: form.grant_id.clone(),
+        };
+        let service = server.oidc_service();
+        return service.accept_client(&cmd);
     }
     AuthorizeRet::error(
         ek::RequireLogin("Login required.".to_string()).into(),
@@ -92,7 +109,7 @@ pub fn accept_client(
     )
 }
 
-#[derive(FromForm, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct TokensForm {
     pub grant_type: Option<String>,
     pub code: Option<String>,
@@ -102,18 +119,18 @@ pub struct TokensForm {
     pub password: Option<String>,
 }
 
-#[post("/tokens", data = "<input>")]
-pub fn get_tokens<'r>(
-    cors: Guard<'r>,
-    input: LenientForm<TokensForm>,
-    authorization_header: AuthorizationHeader,
-    server: Server,
-) -> rocket_cors::Responder<'r, TokensRet> {
-    let (client_id, client_secret) = match authorization_header.get_basic_name_and_password() {
-        Some((a, b)) => (Some(a), Some(b)),
-        None => (None, None),
+pub fn get_tokens(req: HttpRequest<ApplicationState>, form: Form<TokensForm>) -> TokensRet {
+    let server = &req.state().server;
+    let auth = req.clone()
+        .extensions()
+        .get::<AuthorizationType>()
+        .map(|v| v.clone());
+    let (client_id, client_secret) = if let Some(AuthorizationType::Basic { name, password }) = auth
+    {
+        (Some(name), Some(password))
+    } else {
+        (None, None)
     };
-    let form = input.into_inner();
     let cmd = GetTokensCmd {
         client_id,
         client_secret,
@@ -125,28 +142,30 @@ pub fn get_tokens<'r>(
         password: form.password.clone(),
     };
     let service = server.oidc_service();
-    let ret = service.get_tokens(&cmd);
-    cors.responder(ret)
+    service.get_tokens(&cmd)
 }
 
-#[derive(FromForm, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct IntrospectForm {
     pub token: String,
     pub token_type_hint: Option<String>,
 }
 
-#[post("/introspect", data = "<input>")]
-pub fn introspect<'r>(
-    cors: Guard<'r>,
-    input: LenientForm<IntrospectForm>,
-    authorization_header: AuthorizationHeader,
-    server: Server,
-) -> rocket_cors::Responder<'r, Result<IntrospectRet, ed::Error>> {
-    let (client_id, client_secret) = match authorization_header.get_basic_name_and_password() {
-        Some((a, b)) => (Some(a), Some(b)),
-        None => (None, None),
+pub fn introspect(
+    req: HttpRequest<ApplicationState>,
+    form: Form<IntrospectForm>,
+) -> Result<IntrospectRet, ed::Error> {
+    let server = &req.state().server;
+    let auth = req.clone()
+        .extensions()
+        .get::<AuthorizationType>()
+        .map(|v| v.clone());
+    let (client_id, client_secret) = if let Some(AuthorizationType::Basic { name, password }) = auth
+    {
+        (Some(name), Some(password))
+    } else {
+        (None, None)
     };
-    let form = input.into_inner();
     let cmd = IntrospectCmd {
         client_id,
         client_secret,
@@ -154,34 +173,27 @@ pub fn introspect<'r>(
         token_type_hint: form.token_type_hint.clone(),
     };
     let service = server.oidc_service();
-    let ret = service.introspect_token(&cmd);
-    cors.responder(ret)
+    service.introspect_token(&cmd)
 }
 
-#[get("/userinfo")]
-pub fn get_userinfo<'r>(
-    cors: Guard<'r>,
-    authorization_header: AuthorizationHeader,
-    server: Server,
-) -> rocket_cors::Responder<'r, Result<EndUserClaims, ed::Error>> {
-    if let AuthorizationType::Bearer = authorization_header.auth_type {
-        if let Some(token) = authorization_header.token {
-            let cmd = UserinfoCmd {
-                access_token: token,
-            };
-            let service = server.oidc_service();
-            let ret = service.get_userinfo(&cmd);
-            return cors.responder(ret);
-        }
+pub fn get_userinfo(req: HttpRequest<ApplicationState>) -> Result<EndUserClaims, ed::Error> {
+    let server = &req.state().server;
+    let auth = req.clone()
+        .extensions()
+        .get::<AuthorizationType>()
+        .map(|v| v.clone());
+    if let Some(AuthorizationType::Bearer { token }) = auth {
+        let cmd = UserinfoCmd {
+            access_token: token,
+        };
+        let service = server.oidc_service();
+        return service.get_userinfo(&cmd);
     };
-    cors.responder(Err(ek::UserinfoError(
-        "Access token is required.".to_string(),
-    ).into()))
+    Err(ek::UserinfoError("Access token is required.".to_string()).into())
 }
 
-#[get("/publickey")]
-pub fn get_publickey<'r>(cors: Guard<'r>, server: Server) -> rocket_cors::Responder<'r, String> {
+pub fn get_publickey(req: HttpRequest<ApplicationState>) -> String {
+    let server = &req.state().server;
     let service = server.oidc_service();
-    let ret = service.get_publickey();
-    cors.responder(ret)
+    service.get_publickey()
 }

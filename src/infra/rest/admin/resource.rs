@@ -1,16 +1,15 @@
-use rocket::http::Status;
-use rocket::request::Request;
-use rocket::response::{Responder, Response};
-use rocket_contrib::Json;
-use rocket_cors::{self, Guard};
-
+use actix_web::Error;
+use actix_web::HttpRequest;
+use actix_web::HttpResponse;
+use actix_web::Json;
+use actix_web::Path;
+use actix_web::Responder;
 use app::admin::{AdminRepr, AdminService, AdminServiceComponent, RegisterAdminCmd, UpdateAdminCmd};
 use constant;
 use domain::error::domain as ed;
-use infra::rest::common::{AuthorizationHeader, AuthorizationType, CommonListResponse,
-                          CommonResponse};
-use infra::session::RedisStore;
-use server::Server;
+use infra::rest::common::{CommonListResponse, CommonResponse, HttpStatus};
+use infra::rest::middleware::AuthorizationType;
+use server::ApplicationState;
 use util::generate_random_id;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -25,76 +24,67 @@ pub struct AdminLoginResponse {
     pub admin_id: String,
 }
 
-impl<'r> Responder<'r> for AdminLoginResponse {
-    fn respond_to(self, _request: &Request) -> Result<Response<'r>, Status> {
-        CommonResponse::respond(&self, Status::Ok).ok()
+impl Responder for AdminLoginResponse {
+    type Item = HttpResponse;
+    type Error = Error;
+    fn respond_to(self, _req: HttpRequest) -> Result<HttpResponse, Error> {
+        Ok(CommonResponse::respond(&self, HttpStatus::ok()))
     }
 }
 
-#[post("/login", data = "<input>")]
 pub fn login(
-    input: Json<AdminLoginForm>,
-    authorization_header: AuthorizationHeader,
-    redis_store: RedisStore,
-    server: Server,
+    req: HttpRequest<ApplicationState>,
+    form: Json<AdminLoginForm>,
 ) -> Result<AdminLoginResponse, ed::Error> {
-    let form = input.into_inner();
-    let name = form.name;
-    let password = form.password;
+    let server = &req.state().server;
+    let redis_store = &req.state().redis_pool.get_store()?;
+    let name = &form.name;
+    let password = &form.password;
     let service = server.admin_service();
-    let ret = service.log_in(&name, &password)?;
-    let mut sid = generate_random_id(64usize);
-    if let AuthorizationType::Bearer = authorization_header.auth_type {
-        if let Some(token) = authorization_header.token {
-            sid = token.clone();
-            redis_store.set(&sid, constant::ADMIN_SESS_ID_FIELD, &ret.id)?;
-        } else {
-            redis_store.set(&sid, constant::ADMIN_SESS_ID_FIELD, &ret.id)?;
-        }
-    } else {
-        redis_store.set(&sid, constant::ADMIN_SESS_ID_FIELD, &ret.id)?;
-    }
+    let ret = service.log_in(name, password)?;
+    let sid = generate_random_id(64usize);
+    redis_store.set(&sid, constant::ADMIN_SESS_ID_FIELD, &ret.id)?;
     Ok(AdminLoginResponse {
         sid,
         admin_id: ret.id.clone(),
     })
 }
 
-#[post("/logout")]
-pub fn logout(
-    authorization_header: AuthorizationHeader,
-    redis_store: RedisStore,
-) -> Result<(), ed::Error> {
-    if let AuthorizationType::Bearer = authorization_header.auth_type {
-        if let Some(token) = authorization_header.token {
-            redis_store.del(&token, None)?
-        }
+pub fn logout(req: HttpRequest<ApplicationState>) -> Result<HttpResponse, ed::Error> {
+    let redis_store = &req.state().redis_pool.get_store()?;
+    let auth = req.clone()
+        .extensions()
+        .get::<AuthorizationType>()
+        .map(|v| v.clone());
+    if let Some(AuthorizationType::Bearer { token }) = auth {
+        redis_store.del(&token, Some(constant::ADMIN_SESS_ID_FIELD))?
     }
-    Ok(())
+    Ok(HttpResponse::Ok().finish())
 }
 
-#[get("/")]
-pub fn get_admins<'r>(
-    cors: Guard<'r>,
-    server: Server,
-) -> rocket_cors::Responder<Result<CommonListResponse<AdminRepr>, ed::Error>> {
+pub fn get_admins(
+    req: HttpRequest<ApplicationState>,
+) -> Result<CommonListResponse<AdminRepr>, ed::Error> {
+    let server = &req.state().server;
     let service = server.admin_service();
-    cors.responder(service.get_admins().map(|v| CommonListResponse { list: v }))
+    service.get_admins().map(|v| CommonListResponse { list: v })
 }
 
-#[get("/<id>")]
-pub fn get_admin<'r>(
-    id: String,
-    authorization_header: AuthorizationHeader,
-    redis_store: RedisStore,
-    server: Server,
+pub fn get_admin(
+    req: HttpRequest<ApplicationState>,
+    path: Path<(String)>,
 ) -> Result<AdminRepr, ed::Error> {
-    if let AuthorizationType::Bearer = authorization_header.auth_type {
-        if let Some(token) = authorization_header.token {
-            let self_id = redis_store.get(&token, constant::ADMIN_SESS_ID_FIELD)?;
-            let service = server.admin_service();
-            return service.get_admin(&id, &self_id);
-        }
+    let id = path.into_inner();
+    let server = &req.state().server;
+    let redis_store = &req.state().redis_pool.get_store()?;
+    let auth = req.clone()
+        .extensions()
+        .get::<AuthorizationType>()
+        .map(|v| v.clone());
+    if let Some(AuthorizationType::Bearer { token }) = auth {
+        let self_id = redis_store.get(&token, constant::ADMIN_SESS_ID_FIELD)?;
+        let service = server.admin_service();
+        return service.get_admin(&id, &self_id);
     }
     Err(ed::ErrorKind::RequireLogin(format!("ID => {}", id)).into())
 }
@@ -110,29 +100,27 @@ pub struct AdminRegisterResponse {
     pub admin_id: String,
 }
 
-impl<'r> Responder<'r> for AdminRegisterResponse {
-    fn respond_to(self, _request: &Request) -> Result<Response<'r>, Status> {
-        CommonResponse::respond(&self, Status::Ok).ok()
+impl Responder for AdminRegisterResponse {
+    type Item = HttpResponse;
+    type Error = Error;
+    fn respond_to(self, _req: HttpRequest) -> Result<HttpResponse, Error> {
+        Ok(CommonResponse::respond(&self, HttpStatus::ok()))
     }
 }
 
-#[post("/", data = "<input>")]
-pub fn register_admin<'r>(
-    cors: Guard<'r>,
-    input: Json<AdminRegisterForm>,
-    server: Server,
-) -> rocket_cors::Responder<Result<AdminRegisterResponse, ed::Error>> {
-    let form = input.into_inner();
+pub fn register_admin(
+    req: HttpRequest<ApplicationState>,
+    form: Json<AdminRegisterForm>,
+) -> Result<AdminRegisterResponse, ed::Error> {
+    let server = &req.state().server;
     let cmd = RegisterAdminCmd {
-        name: form.name,
-        password: form.password,
+        name: form.name.clone(),
+        password: form.password.clone(),
     };
     let service = server.admin_service();
-    cors.responder(
-        service
-            .register_admin(&cmd)
-            .map(|r| AdminRegisterResponse { admin_id: r.id }),
-    )
+    service
+        .register_admin(&cmd)
+        .map(|r| AdminRegisterResponse { admin_id: r.id })
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -142,45 +130,48 @@ pub struct AdminUpdateForm {
     pub current_password: Option<String>,
 }
 
-#[put("/<id>", data = "<input>")]
 pub fn update_admin(
-    id: String,
-    input: Json<AdminUpdateForm>,
-    authorization_header: AuthorizationHeader,
-    redis_store: RedisStore,
-    server: Server,
-) -> Result<(), ed::Error> {
-    let form = input.into_inner();
-    if let AuthorizationType::Bearer = authorization_header.auth_type {
-        if let Some(token) = authorization_header.token {
-            let self_id = redis_store.get(&token, constant::ADMIN_SESS_ID_FIELD)?;
-            let cmd = UpdateAdminCmd {
-                target_id: id,
-                self_id,
-                name: form.name,
-                new_password: form.new_password,
-                current_password: form.current_password,
-            };
-            let service = server.admin_service();
-            return service.update_admin(&cmd);
-        }
+    req: HttpRequest<ApplicationState>,
+    path: Path<(String)>,
+    form: Json<AdminUpdateForm>,
+) -> Result<&'static str, ed::Error> {
+    let id = path.into_inner();
+    let server = &req.state().server;
+    let redis_store = &req.state().redis_pool.get_store()?;
+    let auth = req.clone()
+        .extensions()
+        .get::<AuthorizationType>()
+        .map(|v| v.clone());
+    if let Some(AuthorizationType::Bearer { token }) = auth {
+        let self_id = redis_store.get(&token, constant::ADMIN_SESS_ID_FIELD)?;
+        let cmd = UpdateAdminCmd {
+            target_id: id,
+            self_id,
+            name: form.name.clone(),
+            new_password: form.new_password.clone(),
+            current_password: form.current_password.clone(),
+        };
+        let service = server.admin_service();
+        return service.update_admin(&cmd).map(|()| "");
     }
     Err(ed::ErrorKind::RequireLogin(format!("ID => {}", id)).into())
 }
 
-#[delete("/<id>")]
 pub fn delete_admin(
-    id: String,
-    authorization_header: AuthorizationHeader,
-    redis_store: RedisStore,
-    server: Server,
-) -> Result<(), ed::Error> {
-    if let AuthorizationType::Bearer = authorization_header.auth_type {
-        if let Some(token) = authorization_header.token {
-            let self_id = redis_store.get(&token, constant::ADMIN_SESS_ID_FIELD)?;
-            let service = server.admin_service();
-            return service.delete_admin(&id, &self_id);
-        }
+    req: HttpRequest<ApplicationState>,
+    path: Path<(String)>,
+) -> Result<&'static str, ed::Error> {
+    let id = path.into_inner();
+    let server = &req.state().server;
+    let redis_store = &req.state().redis_pool.get_store()?;
+    let auth = req.clone()
+        .extensions()
+        .get::<AuthorizationType>()
+        .map(|v| v.clone());
+    if let Some(AuthorizationType::Bearer { token }) = auth {
+        let self_id = redis_store.get(&token, constant::ADMIN_SESS_ID_FIELD)?;
+        let service = server.admin_service();
+        return service.delete_admin(&id, &self_id).map(|()| "");
     }
     Err(ed::ErrorKind::RequireLogin(format!("ID => {}", id)).into())
 }

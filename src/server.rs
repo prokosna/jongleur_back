@@ -18,9 +18,8 @@ use infra::persistence::{AccessTokenRepositoryMongo, AdminRepositoryMongo, Clien
                          EndUserRepositoryMongo, GrantRepositoryMongo, HealthRepositoryMongo,
                          IdTokenRepositoryMongo, MongoClient, RefreshTokenRepositoryMongo,
                          ResourceRepositoryMongo};
+use infra::session::RedisPool;
 use mongo_driver::client::{ClientPool, Uri};
-use rocket::request::{self, FromRequest};
-use rocket::{Request, State};
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -226,18 +225,25 @@ impl HealthServiceComponent for Server {
     }
 }
 
-// For Rocket shared state
-impl<'a, 'r> FromRequest<'a, 'r> for Server {
-    type Error = ();
+// For actix-web shared state
+#[derive(Clone)]
+pub struct ApplicationState {
+    pub server: Server,
+    pub redis_pool: RedisPool,
+}
 
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
-        request
-            .guard::<State<Server>>()
-            .map(|server| server.clone())
+impl ApplicationState {
+    pub fn new() -> ApplicationState {
+        let s = build_server();
+        let p = RedisPool::new();
+        ApplicationState {
+            server: s,
+            redis_pool: p,
+        }
     }
 }
 
-pub fn build_server() -> Server {
+fn build_server() -> Server {
     let db_name = "jongleur".to_string();
     let uri = Uri::new("mongodb://localhost:27017/").unwrap();
     let pool = Arc::new(ClientPool::new(uri.clone(), None));

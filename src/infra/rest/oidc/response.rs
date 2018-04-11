@@ -1,26 +1,30 @@
+use actix_web::*;
 use error_chain::ChainedError;
-use rocket::http::Status;
-use rocket::request::Request;
-use rocket::response::{Responder, Response};
 
 use domain::model::EndUserClaims;
 use domain::service::{AuthorizeRet, AuthorizeRetKind, IntrospectRet, TokensRet, TokensRetKind};
-use infra::rest::common::CommonResponse;
+use infra::rest::common::{CommonResponse, HttpStatus};
 
-impl<'r> Responder<'r> for EndUserClaims {
-    fn respond_to(self, _request: &Request) -> Result<Response<'r>, Status> {
-        CommonResponse::respond(&self, Status::Ok).ok()
+impl Responder for EndUserClaims {
+    type Item = HttpResponse;
+    type Error = Error;
+    fn respond_to(self, _req: HttpRequest) -> Result<HttpResponse, Error> {
+        Ok(CommonResponse::respond(&self, HttpStatus::ok()))
     }
 }
 
-impl<'r> Responder<'r> for IntrospectRet {
-    fn respond_to(self, _request: &Request) -> Result<Response<'r>, Status> {
-        CommonResponse::respond(&self, Status::Ok).ok()
+impl Responder for IntrospectRet {
+    type Item = HttpResponse;
+    type Error = Error;
+    fn respond_to(self, _req: HttpRequest) -> Result<HttpResponse, Error> {
+        Ok(CommonResponse::respond(&self, HttpStatus::ok()))
     }
 }
 
-impl<'r> Responder<'r> for AuthorizeRet {
-    fn respond_to(self, _request: &Request) -> Result<Response<'r>, Status> {
+impl Responder for AuthorizeRet {
+    type Item = HttpResponse;
+    type Error = Error;
+    fn respond_to(self, _req: HttpRequest) -> Result<HttpResponse, Error> {
         match self.redirect_uri {
             Some(uri) => {
                 match self.kind {
@@ -29,7 +33,7 @@ impl<'r> Responder<'r> for AuthorizeRet {
                     }
                     _ => {}
                 }
-                CommonResponse::redirect(self.kind, uri).ok()
+                Ok(CommonResponse::redirect(self.kind, uri))
             }
             None => {
                 let status = match self.kind {
@@ -38,24 +42,26 @@ impl<'r> Responder<'r> for AuthorizeRet {
                         let (status, _, _) = _cause.convert_status_content();
                         status
                     }
-                    _ => Status::Ok,
+                    _ => HttpStatus::ok(),
                 };
-                CommonResponse::respond(self.kind, status).ok()
+                Ok(CommonResponse::respond(self.kind, status))
             }
         }
     }
 }
 
-impl<'r> Responder<'r> for TokensRet {
-    fn respond_to(self, _request: &Request) -> Result<Response<'r>, Status> {
+impl Responder for TokensRet {
+    type Item = HttpResponse;
+    type Error = Error;
+    fn respond_to(self, _req: HttpRequest) -> Result<HttpResponse, Error> {
         let status = match self.kind {
             TokensRetKind::Error { ref _cause, .. } => {
                 error!("{}", _cause.display_chain().to_string());
                 let (status, _, _) = _cause.convert_status_content();
                 status
             }
-            _ => Status::Ok,
+            _ => HttpStatus::ok(),
         };
-        CommonResponse::respond(self.kind, status).ok()
+        Ok(CommonResponse::respond(self.kind, status))
     }
 }

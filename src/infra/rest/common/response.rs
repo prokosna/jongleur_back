@@ -1,52 +1,108 @@
-//! Common responders for Rocket
-use rocket::http::{ContentType, Status};
-use rocket::request::Request;
-use rocket::response::{Responder, Response, ResponseBuilder};
+//! Common responders for Actix-web
+use actix_web::http::StatusCode;
+use actix_web::Error;
+use actix_web::HttpRequest;
+use actix_web::HttpResponse;
+use actix_web::Responder;
 use serde::Serialize;
-use serde_json;
 use serde_urlencoded;
 use std::collections::HashMap;
-use std::io::Cursor;
 
 pub struct CommonResponse {}
 
-impl CommonResponse {
-    pub fn respond<'r, T: Serialize>(model: T, status: Status) -> ResponseBuilder<'r> {
-        let mut builder = Response::build();
-        builder.header(ContentType::JSON);
-        builder.raw_header("Cache-Control", "no-store");
-        builder.raw_header("Pragma", "no-cache");
-        builder.sized_body(Cursor::new(serde_json::to_string(&model).unwrap()));
-        builder.status(status);
-        builder
+pub struct HttpStatus {}
+
+impl HttpStatus {
+    pub fn ok() -> StatusCode {
+        lazy_static! {
+            static ref CODE: StatusCode = StatusCode::from_u16(200u16).unwrap();
+        }
+        CODE.clone()
     }
 
-    pub fn redirect<'r, T: Serialize>(model: T, redirect_uri: String) -> ResponseBuilder<'r> {
+    pub fn found() -> StatusCode {
+        lazy_static! {
+            static ref CODE: StatusCode = StatusCode::from_u16(302u16).unwrap();
+        }
+        CODE.clone()
+    }
+
+    pub fn bad_request() -> StatusCode {
+        lazy_static! {
+            static ref CODE: StatusCode = StatusCode::from_u16(400u16).unwrap();
+        }
+        CODE.clone()
+    }
+
+    pub fn unauthorized() -> StatusCode {
+        lazy_static! {
+            static ref CODE: StatusCode = StatusCode::from_u16(401u16).unwrap();
+        }
+        CODE.clone()
+    }
+
+    pub fn not_found() -> StatusCode {
+        lazy_static! {
+            static ref CODE: StatusCode = StatusCode::from_u16(404u16).unwrap();
+        }
+        CODE.clone()
+    }
+
+    pub fn method_not_allowed() -> StatusCode {
+        lazy_static! {
+            static ref CODE: StatusCode = StatusCode::from_u16(405u16).unwrap();
+        }
+        CODE.clone()
+    }
+
+    pub fn internal_server_error() -> StatusCode {
+        lazy_static! {
+            static ref CODE: StatusCode = StatusCode::from_u16(500u16).unwrap();
+        }
+        CODE.clone()
+    }
+
+    pub fn service_unavailable() -> StatusCode {
+        lazy_static! {
+            static ref CODE: StatusCode = StatusCode::from_u16(503u16).unwrap();
+        }
+        CODE.clone()
+    }
+}
+
+impl CommonResponse {
+    pub fn respond<T: Serialize>(model: T, status: StatusCode) -> HttpResponse {
+        let mut builder = HttpResponse::build(status);
+        builder
+            .header("Cache-Control", "no-store")
+            .header("Pragma", "no-cache")
+            .json(&model)
+    }
+
+    pub fn redirect<T: Serialize>(model: T, redirect_uri: String) -> HttpResponse {
         // Jongleur is a SPA. So all requests are xhr,
         // Jongleur returns 200 and a location property instead of 302
-        let mut builder = Response::build();
+        let mut builder = HttpResponse::build(HttpStatus::found());
         let qs = serde_urlencoded::to_string(&model).unwrap();
         let redirect_uri = format!("{}?{}", redirect_uri, &qs);
         let mut content = HashMap::new();
         content.insert("status", "redirect".to_string());
         content.insert("location", redirect_uri);
-        builder.header(ContentType::JSON);
-        builder.raw_header("Cache-Control", "no-store");
-        builder.raw_header("Pragma", "no-cache");
-        builder.sized_body(Cursor::new(serde_json::to_string(&content).unwrap()));
-        builder.status(Status::Ok);
         builder
+            .header("Cache-Control", "no-store")
+            .header("Pragma", "no-cache")
+            .json(&content)
     }
 
-    pub fn bearer<'r, T: Serialize>(model: T, status: Status) -> ResponseBuilder<'r> {
-        let mut builder = Response::build();
+    pub fn bearer<T: Serialize>(model: T, status: StatusCode) -> HttpResponse {
+        let mut builder = HttpResponse::build(status);
         let qs = serde_urlencoded::to_string(&model).unwrap();
         let value = qs.replace("&", ",");
-        builder.raw_header("Cache-Control", "no-store");
-        builder.raw_header("Pragma", "no-cache");
-        builder.raw_header("WWW-Authenticate", value);
-        builder.status(status);
         builder
+            .header("Cache-Control", "no-store")
+            .header("Pragma", "no-cache")
+            .header("WWW-Authenticate", value)
+            .finish()
     }
 }
 
@@ -54,8 +110,10 @@ pub struct CommonListResponse<T: Serialize> {
     pub list: Vec<T>,
 }
 
-impl<'r, T: Serialize> Responder<'r> for CommonListResponse<T> {
-    fn respond_to(self, _request: &Request) -> Result<Response<'r>, Status> {
-        CommonResponse::respond(self.list, Status::Ok).ok()
+impl<T: Serialize> Responder for CommonListResponse<T> {
+    type Item = HttpResponse;
+    type Error = Error;
+    fn respond_to(self, _req: HttpRequest) -> Result<HttpResponse, Error> {
+        Ok(CommonResponse::respond(self.list, HttpStatus::ok()))
     }
 }

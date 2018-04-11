@@ -1,14 +1,10 @@
-use rocket_cors::{self, Guard};
-
+use actix_web::*;
 use app::health::{HealthService, HealthServiceComponent};
 use domain::error::domain as ed;
-use server::Server;
+use server::ApplicationState;
 
-#[get("/")]
-pub fn get_health<'a>(
-    cors: Guard<'a>,
-    server: Server,
-) -> rocket_cors::Responder<Result<String, ed::Error>> {
+pub fn get_health(req: HttpRequest<ApplicationState>) -> Result<&'static str, ed::Error> {
+    let server = &req.state().server;
     let service = server.health_service();
-    cors.responder(service.check().map(|()| "Ok".to_string()))
+    service.check().map(|()| "Ok")
 }

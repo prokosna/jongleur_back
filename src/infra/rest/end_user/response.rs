@@ -1,18 +1,19 @@
-use rocket::http::Status;
-use rocket::request::Request;
-use rocket::response::{Responder, Response};
-
+use actix_web::*;
 use app::end_user::{DetailedEndUserRepr, EndUserRepr};
-use infra::rest::common::CommonResponse;
+use infra::rest::common::{CommonResponse, HttpStatus};
 
-impl<'r> Responder<'r> for EndUserRepr {
-    fn respond_to(self, _request: &Request) -> Result<Response<'r>, Status> {
-        CommonResponse::respond(&self, Status::Ok).ok()
+impl Responder for EndUserRepr {
+    type Item = HttpResponse;
+    type Error = Error;
+    fn respond_to(self, _req: HttpRequest) -> Result<HttpResponse, Error> {
+        Ok(CommonResponse::respond(&self, HttpStatus::ok()))
     }
 }
 
-impl<'r> Responder<'r> for DetailedEndUserRepr {
-    fn respond_to(self, _request: &Request) -> Result<Response<'r>, Status> {
-        CommonResponse::respond(&self, Status::Ok).ok()
+impl Responder for DetailedEndUserRepr {
+    type Item = HttpResponse;
+    type Error = Error;
+    fn respond_to(self, _req: HttpRequest) -> Result<HttpResponse, Error> {
+        Ok(CommonResponse::respond(&self, HttpStatus::ok()))
     }
 }
